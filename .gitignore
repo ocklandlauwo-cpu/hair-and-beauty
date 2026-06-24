@@ -1,0 +1,30 @@
+# Backend (Laravel)
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/vendor/
+backend/node_modules/
+backend/storage/logs/*.log
+backend/storage/app/public
+backend/bootstrap/cache/*.php
+backend/.php-cs-fixer.cache
+backend/.phpunit.result.cache
+
+# Frontend (React/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+frontend/.vite/
+
+# OS & editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Worktrees
+.worktrees/
