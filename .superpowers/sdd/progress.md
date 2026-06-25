@@ -19,9 +19,20 @@ _Started: 2026-06-24_
 - Sanctum config publication (config/sanctum.php + guard wiring) — Phase 4
 - Route auth guards + skip-to-main link — Phase 4 nav implementation
 
-## Phase 2: Backend foundation & DB connections
+## Phase 2: Backend foundation & DB connections — COMPLETE ✓
 
-- [ ] Step 2.1: PostgreSQL dual-role setup (hairbeauty_owner + hairbeauty_app)
-- [ ] Step 2.2: SetDbSessionContext middleware — SET/RESET GUCs per request
-- [ ] Step 2.3: Sanctum token auth (LoginController, LogoutController, MeController, /api/v1/auth/* routes)
-- [ ] Step 2.4: RBAC — spatie/laravel-permission roles seeder (admin, store_keeper, seller)
+- [x] Task 1: PostgreSQL dual-role setup + pgsql_owner connection + migrations.connection
+- [x] Task 2: Users migration (role/location_id/is_active) + Sanctum PAT setup + User model
+- [x] Task 3: spatie/laravel-permission + RoleSeeder (admin, store_keeper, seller — sanctum guard)
+- [x] Task 4: SetDbSessionContext — full set_config() GUC implementation + RESET in finally
+- [x] Task 5: Auth controllers (Login/Logout/Me) + /api/v1/auth/* routes
+
+## Phase 3: Database schema — migrations, functions, triggers, views, RLS policies
+
+- [ ] Step 3.1: Core tables (locations, products, categories, batches)
+- [ ] Step 3.2: Inventory tables (stock_movements ledger, per-location stock)
+- [ ] Step 3.3: Sales tables (sales, sale_items, clients)
+- [ ] Step 3.4: Supporting tables (expenses, news, attendance, distributions)
+- [ ] Step 3.5: PostgreSQL functions + triggers (stock calc, audit)
+- [ ] Step 3.6: RLS policies — enable RLS + policies per table using app.* GUCs
+- [ ] Step 3.7: Views (current_stock_by_location, low_stock_alerts, etc.)

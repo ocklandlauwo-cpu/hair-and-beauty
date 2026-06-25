@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,11 +13,12 @@ class SetDbSessionContext
 {
     public function handle(Request $request, Closure $next): Response
     {
+        /** @var User|null $user */
         $user = Auth::guard('sanctum')->user();
 
-        $userId = (string) ($user?->id ?? 0);
-        $role = $user?->role ?? 'guest';
-        $locationIds = $user?->location_id !== null
+        $userId = (string) ($user !== null ? $user->id : 0);
+        $role = $user !== null ? ($user->role ?? 'guest') : 'guest';
+        $locationIds = $user !== null && $user->location_id !== null
             ? json_encode([$user->location_id])
             : '[]';
 
