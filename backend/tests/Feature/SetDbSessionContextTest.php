@@ -36,12 +36,16 @@ it('sets user GUCs for an authenticated admin with no location', function () {
 });
 
 it('sets location_ids GUC for a seller with a location', function () {
-    $user = User::factory()->seller()->create(['location_id' => 3]);
+    $locationId = \Illuminate\Support\Facades\DB::table('locations')->insertGetId([
+        'name' => 'Test Shop', 'type' => 'shop', 'geofence_radius_m' => 100,
+        'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    $user = User::factory()->seller()->create(['location_id' => $locationId]);
     Sanctum::actingAs($user);
 
     $this->getJson('/_test/guc')
         ->assertOk()
         ->assertJsonPath('user_id', (string) $user->id)
         ->assertJsonPath('role', 'seller')
-        ->assertJsonPath('location_ids', json_encode([3]));
+        ->assertJsonPath('location_ids', json_encode([$locationId]));
 });
