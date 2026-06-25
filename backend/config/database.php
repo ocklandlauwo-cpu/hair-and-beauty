@@ -97,6 +97,20 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        'pgsql_owner' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'hairbeauty'),
+            'username' => env('DB_OWNER_USERNAME', 'hairbeauty_owner'),
+            'password' => env('DB_OWNER_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
@@ -128,6 +142,7 @@ return [
     'migrations' => [
         'table' => 'migrations',
         'update_date_on_publish' => true,
+        'connection' => 'pgsql_owner',
     ],
 
     /*
