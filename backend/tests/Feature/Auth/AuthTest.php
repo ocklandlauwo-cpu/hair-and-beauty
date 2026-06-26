@@ -47,14 +47,18 @@ it('returns 422 for inactive users', function () {
 });
 
 it('returns the authenticated user on GET /me', function () {
-    $user = User::factory()->seller()->create(['location_id' => 2]);
+    $locationId = \Illuminate\Support\Facades\DB::table('locations')->insertGetId([
+        'name' => 'Test Shop', 'type' => 'shop', 'geofence_radius_m' => 100,
+        'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    $user = User::factory()->seller()->create(['location_id' => $locationId]);
     Sanctum::actingAs($user);
 
     $this->getJson('/api/v1/auth/me')
         ->assertOk()
         ->assertJsonPath('data.id', $user->id)
         ->assertJsonPath('data.role', 'seller')
-        ->assertJsonPath('data.location_id', 2)
+        ->assertJsonPath('data.location_id', $locationId)
         ->assertJsonPath('data.is_active', true);
 });
 

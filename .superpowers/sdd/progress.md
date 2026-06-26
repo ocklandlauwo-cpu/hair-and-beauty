@@ -25,14 +25,51 @@ _Started: 2026-06-24_
 - [x] Task 2: Users migration (role/location_id/is_active) + Sanctum PAT setup + User model
 - [x] Task 3: spatie/laravel-permission + RoleSeeder (admin, store_keeper, seller — sanctum guard)
 - [x] Task 4: SetDbSessionContext — full set_config() GUC implementation + RESET in finally
-- [x] Task 5: Auth controllers (Login/Logout/Me) + /api/v1/auth/* routes
+- [x] Task 5: Auth controllers (Login/Logout/Me) + /api/v1/auth/* routes (commits 78a0fd2..5ae8b00, final review clean)
+  - Fix cherry-picked to master: ceeac70 (@var User annotation in LogoutController + MeController)
+  - Track for Phase 3/4: reconcile users.role column ↔ spatie roles duality before any hasRole() is introduced
+  - Track for pre-prod: add throttle middleware to POST /login
+  - Minor: fix "idempotent-safe" comment in postgresql-roles.sql; document PostgreSQL CI requirement
 
 ## Phase 3: Database schema — migrations, functions, triggers, views, RLS policies
 
-- [ ] Step 3.1: Core tables (locations, products, categories, batches)
-- [ ] Step 3.2: Inventory tables (stock_movements ledger, per-location stock)
-- [ ] Step 3.3: Sales tables (sales, sale_items, clients)
-- [ ] Step 3.4: Supporting tables (expenses, news, attendance, distributions)
-- [ ] Step 3.5: PostgreSQL functions + triggers (stock calc, audit)
-- [ ] Step 3.6: RLS policies — enable RLS + policies per table using app.* GUCs
-- [ ] Step 3.7: Views (current_stock_by_location, low_stock_alerts, etc.)
+- [x] P3 Task 1: locations, categories, users.location_id FK, LocationSeeder, CategorySeeder (commits 5ae8b00..a21a298, review clean)
+- [x] P3 Task 2: products (pricing, latest_cost, wholesale_threshold=12), batches (commits a21a298..7b6cf9c, review clean, no findings)
+- [x] P3 Task 3: purchases, purchase_items, stock_movements (immutable), fn_get_stock, latest_cost trigger (commits 7b6cf9c..f1e5e2b, review clean)
+  - Minor: mixed PHP string quoting in triggers migration (cosmetic)
+  - Minor: no index on stock_movements(product_id, location_id) — add in performance pass
+  - Note: fn_update_product_latest_cost blind overwrites on batch insert (correct per spec)
+- [x] P3 Task 4: distributions, distribution_items, clients, sales, sale_items (immutable) (commits f1e5e2b..72428cf, review clean, no findings)
+- [x] P3 Task 5: reconciliations (unique/day), expenses, news, attendance (immutable) (commits 72428cf..a25da3a, review clean after fix)
+  - Fix: attendance immutability test wrapped in DB::transaction() for savepoint safety (a25da3a)
+- [x] P3 Task 6: v_current_stock, v_expiry_alerts, v_low_stock_alerts views (commits a25da3a..1605b94, review clean)
+  - Note: v_low_stock_alerts depends on v_current_stock (CROSS JOIN) — may need materialized view for perf in Phase 4
+  - Note: Phase 2 auth+GUC tests fixed for FK enforcement (hardcoded location_id → insertGetId)
+  - Minor: LocationSeeder delete() will need CASCADE when child FKs arrive in later tasks
+  - Minor: locations.name has no UNIQUE constraint (Category does)
+- [x] P3 Task 7: RLS policies on all 16 business tables (commits 1605b94..0e9cbdb, review clean after fix)
+  - Fix: added sale_items_delete + attendance_delete admin policies so immutability triggers fire on DELETE (0e9cbdb)
+  - Migration: 2026_06_26_095634_enable_rls_and_create_policies.php
+  - Test: tests/Feature/Schema/RlsPoliciesTest.php (6/6 pass)
+  - Full suite: 51/51 tests pass
+  - Key decisions:
+    - LOCATION_SCOPED loop handles: clients, sales, reconciliations, expenses, attendance
+    - distributions uses to_location_id → explicit policy
+    - distribution_items and sale_items use subquery EXISTS join to parent table
+    - COALESCE(NULLIF(..., ''), '[]')::jsonb guards against empty app.location_ids on RESET
+    - admin UPDATE/DELETE policies added to stock_movements, sale_items, attendance so immutability triggers fire
+    - TestCase::setUp() sets app.role=admin GUC; tearDown() resets — no individual test changes needed
+
+## Phase 3: Database schema — COMPLETE ✓
+
+All 7 tasks complete. 51 tests passing. PHPStan clean. Pint formatted.
+
+## Phase 4: Core modules (upcoming)
+
+- [ ] P4 Task 1: Product CRUD API (admin)
+- [ ] P4 Task 2: Stock management API (purchases, stock movements)
+- [ ] P4 Task 3: Distribution workflow API
+- [ ] P4 Task 4: POS / Sales API (seller)
+- [ ] P4 Task 5: Reporting API (reconciliations, views)
+- [ ] P4 Task 6: News + Attendance API
+- [ ] P4 Task 7: User management API (admin)
