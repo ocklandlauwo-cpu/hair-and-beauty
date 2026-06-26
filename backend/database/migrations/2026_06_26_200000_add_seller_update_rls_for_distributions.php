@@ -27,11 +27,14 @@ return new class extends Migration
             CREATE POLICY distribution_items_update ON distribution_items FOR UPDATE
             USING (
                 current_setting('app.role', true) IN ('admin', 'store_keeper')
-                OR EXISTS (
-                    SELECT 1 FROM distributions d
-                    WHERE d.id = distribution_items.distribution_id
-                      AND d.to_location_id::text = ANY(ARRAY(SELECT jsonb_array_elements_text(
-                          COALESCE(NULLIF(current_setting('app.location_ids', true), ''), '[]')::jsonb)))
+                OR (
+                    current_setting('app.role', true) = 'seller'
+                    AND EXISTS (
+                        SELECT 1 FROM distributions d
+                        WHERE d.id = distribution_items.distribution_id
+                          AND d.to_location_id::text = ANY(ARRAY(SELECT jsonb_array_elements_text(
+                              COALESCE(NULLIF(current_setting('app.location_ids', true), ''), '[]')::jsonb)))
+                    )
                 )
             )");
     }
