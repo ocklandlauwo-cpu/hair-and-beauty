@@ -5,7 +5,10 @@ use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\StockController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('v1.')->group(function () {
@@ -25,5 +28,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/products', ProductController::class);
         Route::get('/products/{product}/batches', [BatchController::class, 'index'])->name('products.batches.index');
         Route::post('/products/{product}/batches', [BatchController::class, 'store'])->name('products.batches.store');
+
+        // Purchasing & Inventory
+        Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
+        Route::apiResource('/purchases', PurchaseController::class)->only(['index', 'show', 'store']);
+        Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+        Route::get('/stock/alerts/expiry', [StockController::class, 'expiry'])->name('stock.expiry');
+        Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
     });
 });
