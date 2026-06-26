@@ -47,7 +47,8 @@ _Started: 2026-06-24_
   - Note: Phase 2 auth+GUC tests fixed for FK enforcement (hardcoded location_id → insertGetId)
   - Minor: LocationSeeder delete() will need CASCADE when child FKs arrive in later tasks
   - Minor: locations.name has no UNIQUE constraint (Category does)
-- [x] P3 Task 7: RLS policies on all 16 business tables — COMPLETE ✓
+- [x] P3 Task 7: RLS policies on all 16 business tables (commits 1605b94..0e9cbdb, review clean after fix)
+  - Fix: added sale_items_delete + attendance_delete admin policies so immutability triggers fire on DELETE (0e9cbdb)
   - Migration: 2026_06_26_095634_enable_rls_and_create_policies.php
   - Test: tests/Feature/Schema/RlsPoliciesTest.php (6/6 pass)
   - Full suite: 51/51 tests pass
