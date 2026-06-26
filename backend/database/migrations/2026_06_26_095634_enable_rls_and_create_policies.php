@@ -126,6 +126,9 @@ return new class extends Migration
                     COALESCE(NULLIF(current_setting('app.location_ids', true), ''), '[]')::jsonb)))
             )");
         }
+        // Admin can attempt DELETE on attendance — the immutability trigger enforces the actual block
+        DB::statement("CREATE POLICY attendance_delete ON attendance FOR DELETE
+            USING (current_setting('app.role', true) = 'admin')");
 
         // ── distributions — scoped by to_location_id (not a plain location_id column)
         DB::statement('ALTER TABLE distributions ENABLE ROW LEVEL SECURITY');
@@ -178,11 +181,13 @@ return new class extends Migration
             WITH CHECK (
                 current_setting('app.role', true) IN ('admin', 'store_keeper', 'seller')
             )");
-        // Admin can attempt UPDATE — the immutability trigger enforces the actual block
+        // Admin can attempt UPDATE/DELETE — the immutability trigger enforces the actual block
         DB::statement("
             CREATE POLICY sale_items_update ON sale_items FOR UPDATE
             USING (current_setting('app.role', true) = 'admin')
         ");
+        DB::statement("CREATE POLICY sale_items_delete ON sale_items FOR DELETE
+            USING (current_setting('app.role', true) = 'admin')");
 
         // ── news ───────────────────────────────────────────────────────
         DB::statement('ALTER TABLE news ENABLE ROW LEVEL SECURITY');
