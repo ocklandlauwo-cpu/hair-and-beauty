@@ -36,7 +36,8 @@ return new class extends Migration
                               COALESCE(NULLIF(current_setting('app.location_ids', true), ''), '[]')::jsonb)))
                     )
                 )
-            )");
+            )
+        ");
     }
 
     public function down(): void
