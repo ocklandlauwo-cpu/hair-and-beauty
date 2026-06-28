@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\NewsController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
@@ -55,5 +56,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Reconciliation & User Management
         Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index', 'store']);
         Route::apiResource('/users', UserController::class)->only(['index', 'store', 'update']);
+
+        // News / Announcements
+        Route::apiResource('/news', NewsController::class);
     });
 });
