@@ -2,12 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Client;
 use App\Models\Distribution;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Sale;
+use App\Policies\ClientPolicy;
 use App\Policies\DistributionPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\PurchasePolicy;
+use App\Policies\SalePolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,5 +33,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Distribution::class, DistributionPolicy::class);
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(Purchase::class, PurchasePolicy::class);
+        Gate::policy(Sale::class, SalePolicy::class);
+        Gate::policy(Client::class, ClientPolicy::class);
     }
 }

@@ -5,11 +5,14 @@ use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\RevertSaleController;
+use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\StockController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,5 +44,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Distribution
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show', 'store']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
+
+        // POS
+        Route::apiResource('/clients', ClientController::class)->only(['index', 'store']);
+        Route::apiResource('/sales', SaleController::class)->only(['index', 'show', 'store']);
+        Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
     });
 });
