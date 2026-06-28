@@ -11,9 +11,11 @@ use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
+use App\Http\Controllers\Api\V1\ReconciliationController;
 use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\StockController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('v1.')->group(function () {
@@ -49,5 +51,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/clients', ClientController::class)->only(['index', 'store']);
         Route::apiResource('/sales', SaleController::class)->only(['index', 'show', 'store']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
+
+        // Reconciliation & User Management
+        Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index', 'store']);
+        Route::apiResource('/users', UserController::class)->only(['index', 'store', 'update']);
     });
 });

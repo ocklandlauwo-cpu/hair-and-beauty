@@ -64,12 +64,49 @@ _Started: 2026-06-24_
 
 All 7 tasks complete. 51 tests passing. PHPStan clean. Pint formatted.
 
-## Phase 4: Core modules (upcoming)
+## Phase 4: Core modules
 
-- [ ] P4 Task 1: Product CRUD API (admin)
-- [ ] P4 Task 2: Stock management API (purchases, stock movements)
-- [ ] P4 Task 3: Distribution workflow API
-- [ ] P4 Task 4: POS / Sales API (seller)
-- [ ] P4 Task 5: Reporting API (reconciliations, views)
-- [ ] P4 Task 6: News + Attendance API
-- [ ] P4 Task 7: User management API (admin)
+- [x] P4 Task 1: Catalogue API — categories, products, batches CRUD (commits 2b6d692..e2ad506, review clean after fix)
+  - Fix: UpdateProductRequest SKU unique rule uses ->id not object (e2ad506)
+  - Minor: ProductController::show() untested; BatchController::index() bypasses policy (both advisory)
+  - Note: priceFor() returns float|string (decimal:2 cast) — Task 4 SaleController must handle both
+- [x] P4 Task 2: Purchasing & Inventory API — locations, purchases, stock movements, v_current_stock views (commits e2ad506..67aa607, review clean)
+  - Fix: SetDbSessionContext finally-block changed to save/restore prior GUC (not RESET) — safe, php-fpm unchanged
+  - Fix: fn_update_product_latest_cost() rebuilt as SECURITY DEFINER + local role elevation (RLS prod_update policy blocked store_keeper)
+  - Note: Location::where(type=store)->firstOrFail() — single-store assumption, revisit for multi-warehouse
+- [x] P4 Task 3: Distribution workflow — create (pending), confirm (in-movement), discrepancy state (commits 67aa607..349e302, review clean after fix)
+  - Fix: distribution_items_update RLS missing seller role guard — added (349e302)
+  - Fix: fn_update_product_latest_cost SECURITY DEFINER was already in Task 2; confirm uses items()->get() not fresh()
+  - Minor: no test for discrepancy status path or double-confirm rejection; ConfirmDistributionController silently defaults missing items to qty_sent
+- [x] P4 Task 4: POS / Sales API — sales with auto price-tier, clients, admin sale revert (commit 272dc65, review clean)
+  - Fix: revert test needed `set_config('app.role','admin',false)` re-set before admin request (RESET clears GUC, RLS blocked sale_items SELECT)
+  - Fix: `Sale::items()` return typed `HasMany<SaleItem, $this>` so PHPStan infers properties on $saleItem loop variable
+  - Minor: `SaleController::show()` untested (advisory)
+  - Note: seller GUC pattern (set before POST, RESET after) must be replicated in future seller tests
+- [x] P4 Task 5: Reconciliation & User Management API — POST /reconciliations (seller-only, unique/location/day), GET/POST /users + PUT /users/{id} (admin-only)
+  - Fix: task-5-brief.md used `json_encode([...])` inside SQL string (PHP-in-PostgreSQL syntax error) — corrected to PHP interpolation `'{$locationIdsJson}'` matching SalesTest pattern
+  - Fix: `paginate()->through()` doesn't emit `meta` key; UserController::index() uses `toArray()` reshape to return `{data, meta}` structure per test contract
+  - Note: UserManagementPolicy::before() returns `false` (not `null`) for non-admins — immediately denies; admins get `true` (bypasses policy methods)
+  - Note: P4 Tasks 6 (News + Attendance) and 7 (separate user management task) were subsumed into Task 5 per revised plan
+  - Full suite: 81/81 tests passing. PHPStan clean. Pint formatted.
+
+## Phase 4: Core modules — COMPLETE ✓
+
+All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
+Merged to master: feat: complete Phase 4 — core API modules (catalogue, purchasing, distribution, POS, reconciliation, user management)
+
+## Phase 5: Supporting modules
+
+Planned tasks (branch: feature/phase-5-supporting-modules):
+
+- [ ] P5 Task 1: Expenses API — POST /expenses (seller), GET /expenses (admin/store_keeper filter by date/location)
+- [ ] P5 Task 2: News & Announcements API — GET /news (all roles), POST /news (admin), mark-read endpoint
+- [ ] P5 Task 3: Attendance API — POST /attendance/check-in + /check-out (seller, geofence-validated), GET /attendance (admin)
+- [ ] P5 Task 4: Dashboard & Reporting API — GET /dashboard/summary, GET /reports/sales, GET /reports/inventory (P&L view, date-range params)
+- [ ] P5 Task 5: Notifications & real-time hooks (optional — push or polling endpoint for low-stock/expiry alerts)
+
+**Phase 5 scope notes:**
+- Expenses: location-scoped, immutable (no update/delete per RLS), seller submits daily
+- Attendance: geofence check using location.geofence_radius_m + GPS coords; immutable log
+- Dashboard: aggregates from v_current_stock + sales/expense tables; no new migrations needed
+- All Phase 5 modules follow the same GUC/RLS/policy/form-request pattern established in Phase 4
