@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
@@ -8,7 +9,10 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
 use App\Http\Controllers\Api\V1\DistributionController;
+use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\NewsController;
+use App\Http\Controllers\Api\V1\PnlController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
@@ -55,5 +59,18 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Reconciliation & User Management
         Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index', 'store']);
         Route::apiResource('/users', UserController::class)->only(['index', 'store', 'update']);
+
+        // Expenses
+        Route::apiResource('/expenses', ExpenseController::class)->only(['index', 'show', 'store']);
+
+        // News / Announcements
+        Route::apiResource('/news', NewsController::class);
+
+        // Attendance
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+
+        // Reports
+        Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
     });
 });

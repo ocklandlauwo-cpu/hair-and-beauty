@@ -15,10 +15,10 @@ it('admin can create a seller user', function () {
     Sanctum::actingAs(User::factory()->admin()->create());
 
     $this->postJson('/api/v1/users', [
-        'name'        => 'Jane Seller',
-        'email'       => 'jane.seller.'.uniqid().'@example.com',
-        'password'    => 'password123',
-        'role'        => 'seller',
+        'name' => 'Jane Seller',
+        'email' => 'jane.seller.'.uniqid().'@example.com',
+        'password' => 'password123',
+        'role' => 'seller',
         'location_id' => $shopId,
     ])
         ->assertCreated()
@@ -37,4 +37,13 @@ it('admin can toggle user active status', function () {
     $this->putJson("/api/v1/users/{$target->id}", ['is_active' => false])
         ->assertOk()
         ->assertJsonPath('data.is_active', false);
+});
+
+it('admin can update a user email', function () {
+    $target = User::factory()->seller()->create(['email' => 'old@example.com']);
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->putJson("/api/v1/users/{$target->id}", ['email' => 'new@example.com'])
+        ->assertOk()
+        ->assertJsonPath('data.email', 'new@example.com');
 });
