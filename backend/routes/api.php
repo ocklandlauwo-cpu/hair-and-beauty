@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\NewsController;
+use App\Http\Controllers\Api\V1\PnlController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
@@ -68,5 +69,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Attendance
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
         Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+
+        // Reports
+        Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
     });
 });

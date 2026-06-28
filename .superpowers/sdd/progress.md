@@ -88,25 +88,48 @@ All 7 tasks complete. 51 tests passing. PHPStan clean. Pint formatted.
   - Fix: `paginate()->through()` doesn't emit `meta` key; UserController::index() uses `toArray()` reshape to return `{data, meta}` structure per test contract
   - Note: UserManagementPolicy::before() returns `false` (not `null`) for non-admins — immediately denies; admins get `true` (bypasses policy methods)
   - Note: P4 Tasks 6 (News + Attendance) and 7 (separate user management task) were subsumed into Task 5 per revised plan
-  - Full suite: 81/81 tests passing. PHPStan clean. Pint formatted.
+  - Fix: UpdateUserRequest email unique rule uses ->id not object (831e06a) — same bug pattern as Task 1
+  - Full suite: 82/82 tests passing (email-update test added). PHPStan clean. Pint formatted.
+  - Note: Phase 4 already merged to master (a51e178); UpdateUserRequest fix (831e06a) on phase-5 branch
 
 ## Phase 4: Core modules — COMPLETE ✓
 
 All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
-Merged to master: feat: complete Phase 4 — core API modules (catalogue, purchasing, distribution, POS, reconciliation, user management)
 
 ## Phase 5: Supporting modules
 
-Planned tasks (branch: feature/phase-5-supporting-modules):
+- [x] P5 Task 1: News/Announcements API — admin CRUD, published filter for non-admin (commits 831e06a..6621d3f, review clean)
+  - Fix: news_write FOR ALL policy missing USING clause — UPDATE/DELETE silently 0-rows; added news_update + news_delete explicit policies
+  - Minor: show() returns 403 (not 404) for non-admin on unpublished news
+  - Flag: expenses/attendance tables may have same FOR ALL pattern — audit before write endpoints
+- [x] P5 Task 2: Expenses API — per-shop, 6 categories, TZS decimal:2, role-scoped location (commits 6621d3f..a48a8a7, review clean)
+  - Note: expenses/attendance RLS already has explicit USING clauses — no fix needed (different pattern from news)
+- [x] P5 Task 3: Geofenced Attendance API — Haversine clock-in/out, is_within_geofence, seller-scoped list (commits a48a8a7..74f3ca3, review clean)
+  - Note: distance_m not persisted (computed on-the-fly); recorded_at can be backdated (design choice)
+- [x] P5 Task 4: P&L Report API — GET /reports/pnl (revenue, COGS, gross profit, expenses, net profit, expense_breakdown)
+  - Formula: Revenue/COGS from non-reverted sale_items; Net Profit = Gross Profit − Expenses; bcsub() for subtraction
+  - Seller auto-scoped to their location_id; admin/store_keeper pass ?location_id= query param
+  - 3 tests: admin retrieval, seller scoping, reverted-sale exclusion — all pass
+  - Fix: brief test used PostgreSQL's `json_encode(...)` (doesn't exist); corrected to PHP interpolation pattern matching AttendanceTest
+  - Full suite: 99/99 tests passing. PHPStan clean. Pint formatted.
 
-- [ ] P5 Task 1: Expenses API — POST /expenses (seller), GET /expenses (admin/store_keeper filter by date/location)
-- [ ] P5 Task 2: News & Announcements API — GET /news (all roles), POST /news (admin), mark-read endpoint
-- [ ] P5 Task 3: Attendance API — POST /attendance/check-in + /check-out (seller, geofence-validated), GET /attendance (admin)
-- [ ] P5 Task 4: Dashboard & Reporting API — GET /dashboard/summary, GET /reports/sales, GET /reports/inventory (P&L view, date-range params)
-- [ ] P5 Task 5: Notifications & real-time hooks (optional — push or polling endpoint for low-stock/expiry alerts)
+## Phase 5: Supporting modules — COMPLETE ✓
 
-**Phase 5 scope notes:**
-- Expenses: location-scoped, immutable (no update/delete per RLS), seller submits daily
-- Attendance: geofence check using location.geofence_radius_m + GPS coords; immutable log
-- Dashboard: aggregates from v_current_stock + sales/expense tables; no new migrations needed
-- All Phase 5 modules follow the same GUC/RLS/policy/form-request pattern established in Phase 4
+All 4 tasks complete. 99 tests passing. PHPStan clean. Pint formatted.
+Merged to master: feat: complete Phase 5 — news, expenses, geofenced attendance, P&L report
+
+## Phase 6: Reporting & Dashboards
+
+Planned tasks (branch: feature/phase-6-reporting-dashboards):
+
+- [ ] P6 Task 1: Dashboard summary endpoint — GET /dashboard/summary (stock levels, recent sales, expense totals, low-stock count)
+- [ ] P6 Task 2: Sales report — GET /reports/sales (by location, product, date range; aggregated via sale_items)
+- [ ] P6 Task 3: Inventory report — GET /reports/inventory (v_current_stock with restock rate, 3-month velocity)
+- [ ] P6 Task 4: Restock alerts — GET /stock/alerts/restock (shift-between-shops logic, 3-month restock rate)
+- [ ] P6 Task 5: Notifications polling endpoint — GET /notifications (low-stock, expiry, pending distributions)
+
+**Phase 6 scope notes:**
+- All endpoints read-only (no new migrations needed beyond Phase 3 views)
+- Dashboard aggregates from v_current_stock + sales/expense tables
+- Restock alerts deferred from Phase 5 (complex analytics requiring 3-month lookback window)
+- Follow same GUC/RLS/policy/form-request pattern established in Phase 4
