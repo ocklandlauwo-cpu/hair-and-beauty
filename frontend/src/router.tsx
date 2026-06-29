@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import RoleRoute from '@/components/RoleRoute'
 import AppLayout from '@/components/layout/AppLayout'
 import LoginPage from '@/pages/auth/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
@@ -26,17 +27,36 @@ export const router = createBrowserRouter([
         path: '/',
         element: <AppLayout />,
         children: [
+          // All authenticated roles
           { index: true, element: <DashboardPage /> },
           { path: 'products', element: <ProductsPage /> },
           { path: 'stock', element: <StockPage /> },
           { path: 'distributions', element: <DistributionsPage /> },
-          { path: 'distributions/new', element: <CreateDistributionPage /> },
           { path: 'distributions/:id/confirm', element: <ConfirmDistributionPage /> },
           { path: 'sales', element: <SalesPage /> },
-          { path: 'sales/new', element: <NewSalePage /> },
-          { path: 'purchases', element: <PurchasesPage /> },
-          { path: 'purchases/new', element: <NewPurchasePage /> },
-          { path: 'users', element: <UsersPage /> },
+          // Admin only
+          {
+            element: <RoleRoute allow={['admin']} />,
+            children: [
+              { path: 'users', element: <UsersPage /> },
+            ],
+          },
+          // Admin + store_keeper
+          {
+            element: <RoleRoute allow={['admin', 'store_keeper']} />,
+            children: [
+              { path: 'purchases', element: <PurchasesPage /> },
+              { path: 'purchases/new', element: <NewPurchasePage /> },
+              { path: 'distributions/new', element: <CreateDistributionPage /> },
+            ],
+          },
+          // Admin + seller
+          {
+            element: <RoleRoute allow={['admin', 'seller']} />,
+            children: [
+              { path: 'sales/new', element: <NewSalePage /> },
+            ],
+          },
         ],
       },
     ],
