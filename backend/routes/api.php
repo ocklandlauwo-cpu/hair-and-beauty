@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\LocationController;
@@ -72,5 +73,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Reports
         Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
+
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     });
 });
