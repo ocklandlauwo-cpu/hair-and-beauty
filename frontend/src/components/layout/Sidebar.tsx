@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp, ClipboardCheck } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
@@ -9,8 +9,9 @@ const allLinks = [
   { to: '/stock',        label: 'Stock',        icon: Boxes,           roles: ['admin', 'store_keeper', 'seller'] as const },
   { to: '/purchases',    label: 'Purchases',    icon: CreditCard,      roles: ['admin', 'store_keeper'] as const },
   { to: '/distributions',label: 'Distributions',icon: Truck,           roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/sales',        label: 'Sales',        icon: ShoppingCart,    roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/news',         label: 'News',         icon: FileText,        roles: ['admin', 'store_keeper', 'seller'] as const },
+  { to: '/sales',           label: 'Sales',          icon: ShoppingCart,   roles: ['admin', 'store_keeper', 'seller'] as const },
+  { to: '/reconciliations', label: 'Reconciliation', icon: ClipboardCheck, roles: ['admin', 'store_keeper', 'seller'] as const },
+  { to: '/news',            label: 'News',           icon: FileText,       roles: ['admin', 'store_keeper', 'seller'] as const },
   { to: '/users',        label: 'Users',        icon: Users,           roles: ['admin'] as const },
   { to: '/reports/pnl',  label: 'P&L Report',   icon: TrendingUp,      roles: ['admin', 'store_keeper'] as const },
 ]
