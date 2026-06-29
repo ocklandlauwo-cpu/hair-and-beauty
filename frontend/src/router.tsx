@@ -16,6 +16,8 @@ import NewPurchasePage from '@/pages/purchases/NewPurchasePage'
 import UsersPage from '@/pages/UsersPage'
 import ReconciliationPage from '@/pages/ReconciliationPage'
 import AttendancePage from '@/pages/AttendancePage'
+import ExpensesPage from '@/pages/ExpensesPage'
+import PnlPage from '@/pages/PnlPage'
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +40,7 @@ export const router = createBrowserRouter([
           { path: 'sales', element: <SalesPage /> },
           { path: 'reconciliations', element: <ReconciliationPage /> },
           { path: 'attendance', element: <AttendancePage /> },
+          { path: 'expenses', element: <ExpensesPage /> },
           // Admin only
           {
             element: <RoleRoute allow={['admin']} />,
@@ -52,6 +55,7 @@ export const router = createBrowserRouter([
               { path: 'purchases', element: <PurchasesPage /> },
               { path: 'purchases/new', element: <NewPurchasePage /> },
               { path: 'distributions/new', element: <CreateDistributionPage /> },
+              { path: 'reports/pnl', element: <PnlPage /> },
             ],
           },
           // Admin + seller

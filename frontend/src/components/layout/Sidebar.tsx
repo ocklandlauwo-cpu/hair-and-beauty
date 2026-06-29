@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp, ClipboardCheck, Clock } from 'lucide-react'
+import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp, ClipboardCheck, Clock, Receipt } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,7 @@ const allLinks = [
   { to: '/reconciliations', label: 'Reconciliation', icon: ClipboardCheck, roles: ['admin', 'store_keeper', 'seller'] as const },
   { to: '/attendance',      label: 'Attendance',     icon: Clock,          roles: ['admin', 'store_keeper', 'seller'] as const },
   { to: '/news',            label: 'News',           icon: FileText,       roles: ['admin', 'store_keeper', 'seller'] as const },
+  { to: '/expenses',        label: 'Expenses',       icon: Receipt,        roles: ['admin', 'store_keeper', 'seller'] as const },
   { to: '/users',        label: 'Users',        icon: Users,           roles: ['admin'] as const },
   { to: '/reports/pnl',  label: 'P&L Report',   icon: TrendingUp,      roles: ['admin', 'store_keeper'] as const },
 ]
