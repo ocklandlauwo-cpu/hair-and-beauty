@@ -10,9 +10,9 @@ import CreateDistributionPage from '@/pages/distributions/CreateDistributionPage
 import ConfirmDistributionPage from '@/pages/distributions/ConfirmDistributionPage'
 import SalesPage from '@/pages/SalesPage'
 import NewSalePage from '@/pages/sales/NewSalePage'
-
-// Lazy-loaded pages (added in later tasks — import as needed)
-// import PurchasesPage from '@/pages/PurchasesPage'
+import PurchasesPage from '@/pages/PurchasesPage'
+import NewPurchasePage from '@/pages/purchases/NewPurchasePage'
+import UsersPage from '@/pages/UsersPage'
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +34,9 @@ export const router = createBrowserRouter([
           { path: 'distributions/:id/confirm', element: <ConfirmDistributionPage /> },
           { path: 'sales', element: <SalesPage /> },
           { path: 'sales/new', element: <NewSalePage /> },
+          { path: 'purchases', element: <PurchasesPage /> },
+          { path: 'purchases/new', element: <NewPurchasePage /> },
+          { path: 'users', element: <UsersPage /> },
         ],
       },
     ],
