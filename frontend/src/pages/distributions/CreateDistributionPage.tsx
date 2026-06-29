@@ -22,7 +22,12 @@ export default function CreateDistributionPage() {
 
   const mutation = useMutation({
     mutationFn: distributionsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['distributions'] }); navigate('/distributions') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['distributions'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      navigate('/distributions')
+    },
     onError: () => setError('Failed to create distribution. Please try again.'),
   })
 

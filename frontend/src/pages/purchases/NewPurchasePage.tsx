@@ -26,7 +26,14 @@ export default function NewPurchasePage() {
 
   const mutation = useMutation({
     mutationFn: (data: CreatePurchasePayload) => purchasesApi.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['purchases'] }); navigate('/purchases') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchases'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['stock-expiry'] })
+      qc.invalidateQueries({ queryKey: ['stock-low'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      navigate('/purchases')
+    },
     onError: () => setError('Failed to record purchase.'),
   })
 
@@ -39,8 +46,10 @@ export default function NewPurchasePage() {
     setProductSearch('')
   }
 
-  const updateItem = (idx: number, field: keyof LineItem, value: string | number) =>
-    setItems(prev => prev.map((i, j) => j === idx ? { ...i, [field]: value } : i))
+  const updateItem = (idx: number, field: keyof LineItem, value: string | number) => {
+    const safeValue = typeof value === 'number' && isNaN(value) ? 0 : value
+    setItems(prev => prev.map((i, j) => j === idx ? { ...i, [field]: safeValue } : i))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,12 +113,12 @@ export default function NewPurchasePage() {
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div>
                     <label className="text-gray-500">Qty</label>
-                    <input type="number" min={1} value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
+                    <input type="number" min={1} value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value === '' ? 1 : Number(e.target.value))}
                       className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
                   </div>
                   <div>
                     <label className="text-gray-500">Cost (TZS)</label>
-                    <input type="number" min={0} value={item.unit_cost} onChange={e => updateItem(idx, 'unit_cost', Number(e.target.value))}
+                    <input type="number" min={0} value={item.unit_cost} onChange={e => updateItem(idx, 'unit_cost', e.target.value === '' ? 0 : Number(e.target.value))}
                       className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
                   </div>
                   <div>
