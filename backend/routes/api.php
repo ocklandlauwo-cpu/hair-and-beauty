@@ -74,7 +74,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Reports
         Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
-        Route::get('/reports/weekly',  [ReportController::class, 'weekly'])->name('reports.weekly');
+        Route::get('/reports/weekly', [ReportController::class, 'weekly'])->name('reports.weekly');
         Route::get('/reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
 
         // Dashboard
