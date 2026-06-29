@@ -167,11 +167,31 @@ Merged to master: feat: complete Phase 7 — React SPA wired to API (auth, dashb
 - [x] P8 Task 3: Attendance — clock-in/out with Geolocation API, within/outside geofence display (commits ae1a2c9..b97cc64, review clean)
 - [x] P8 Task 4: Expenses form (6 categories, NaN guard) + P&L report (date range, KPI cards) (commits b97cc64..764583a, review clean)
   - Note: PDF download link returns 401 (bearer token not sent by browser anchor) — needs signed URL fix pre-prod
+- [x] P8 Task 5: cache invalidation + NaN guards + role as Role + App.tsx removed; merged to master (commits 764583a..e95d68f)
+- [x] P8 Final fixes (d8692c6): LoginThrottleTest uses Cache::flush() (not RateLimiter::clear); distribution mutation adds ['stock-expiry'] + ['stock-low']; ViewsTest false positive (TestCase::setUp already sets app.role=admin)
+
+## Phase 8: Pre-Launch Hardening — COMPLETE ✓
+
+Backend: 111/111 Pest tests. Frontend: 18/18 Vitest tests. tsc clean. Merged to master.
+
+**Pre-launch checklist remaining:**
+- [ ] PDF download link: implement signed URL or token-param for /reports/monthly and /reports/weekly
+- [ ] Production .env: set APP_TIMEZONE=Africa/Dar_es_Salaam, MAIL_MAILER=smtp, all credentials
+- [ ] Add OS cron entry: * * * * * php /path/to/artisan schedule:run
+- [ ] Data migration: legacy MySQL → PostgreSQL ETL (schema unknown — business to provide)
+- [ ] SSL/HTTPS on DirectAdmin VPS
+- [ ] Final UAT run with UatSeeder data
 - [x] P8 Task 5: UX polish — cache invalidation after mutations (sale/purchase/dist → stock+dashboard stale), NaN guards on discount/qty/cost inputs, `role as Role` TypeScript cleanup, App.tsx orphan deleted (18/18 tests pass, tsc clean)
 
 ## Phase 8: Pre-Launch Hardening — COMPLETE ✓
 
 All 5 tasks complete. 18/18 Vitest tests passing. TypeScript clean. Merged to master.
+
+## Phase 9: Go-Live
+
+- [x] P9 Task 1: PDF download via Axios blob — reportsApi + triggerBlobDownload + PnlPage button (commits d8692c6..3dfedcd, review clean)
+- [x] P9 Task 2: Deployment config — .env.production.example, ops/deploy.sh, ops/DEPLOYMENT.md (commits 3dfedcd..ebfc9e6, review clean)
+- [x] P9 Task 3: Legacy MySQL migration scaffold — mysql_legacy DB connection, LEGACY_DB_* .env vars, migrate:from-mysql artisan command (--dry-run graceful failure), 1 new test; 112/112 Pest tests passing. PHPStan clean. Pint formatted. Merged to master.
 
 **Screens delivered:**
 - Login form (email/password, RHF+Zod)
