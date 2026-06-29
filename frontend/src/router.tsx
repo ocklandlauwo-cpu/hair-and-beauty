@@ -15,6 +15,7 @@ import PurchasesPage from '@/pages/PurchasesPage'
 import NewPurchasePage from '@/pages/purchases/NewPurchasePage'
 import UsersPage from '@/pages/UsersPage'
 import ReconciliationPage from '@/pages/ReconciliationPage'
+import AttendancePage from '@/pages/AttendancePage'
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: 'distributions/:id/confirm', element: <ConfirmDistributionPage /> },
           { path: 'sales', element: <SalesPage /> },
           { path: 'reconciliations', element: <ReconciliationPage /> },
+          { path: 'attendance', element: <AttendancePage /> },
           // Admin only
           {
             element: <RoleRoute allow={['admin']} />,
