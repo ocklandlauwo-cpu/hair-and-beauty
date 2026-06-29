@@ -1,10 +1,11 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Cache;
 
 beforeEach(function () {
-    RateLimiter::clear('login');
+    // The throttle:5,1 middleware uses the full cache store; reset it between runs.
+    Cache::flush();
 });
 
 it('blocks login after 5 failed attempts within 1 minute', function () {

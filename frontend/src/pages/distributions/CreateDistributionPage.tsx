@@ -25,6 +25,8 @@ export default function CreateDistributionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['distributions'] })
       qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['stock-expiry'] })
+      qc.invalidateQueries({ queryKey: ['stock-low'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       navigate('/distributions')
     },
