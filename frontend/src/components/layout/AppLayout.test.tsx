@@ -1,6 +1,7 @@
 import { it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { AuthProvider } from '@/contexts/AuthContext'
 import AppLayout from './AppLayout'
 
 function makeRouter() {
@@ -17,7 +18,11 @@ function makeRouter() {
 }
 
 it('renders sidebar and main content area', () => {
-  render(<RouterProvider router={makeRouter()} />)
+  render(
+    <AuthProvider>
+      <RouterProvider router={makeRouter()} />
+    </AuthProvider>
+  )
   expect(screen.getByRole('complementary')).toBeInTheDocument()
   expect(screen.getByRole('main')).toBeInTheDocument()
   expect(screen.getByText('Hair & Beauty')).toBeInTheDocument()
