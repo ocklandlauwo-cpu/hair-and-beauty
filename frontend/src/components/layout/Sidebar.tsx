@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp, ClipboardCheck, Clock, Receipt } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
+import type { Role } from '@/types'
 
 const allLinks = [
   { to: '/',             label: 'Dashboard',    icon: LayoutDashboard, roles: ['admin', 'store_keeper', 'seller'] as const },
@@ -20,8 +21,8 @@ const allLinks = [
 
 export default function Sidebar() {
   const { user } = useAuth()
-  const role = user?.role ?? 'seller'
-  const links = allLinks.filter(l => l.roles.includes(role as never))
+  const role: Role = user?.role ?? 'seller'
+  const links = allLinks.filter(l => l.roles.includes(role as Role))
 
   return (
     <aside

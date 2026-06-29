@@ -34,7 +34,14 @@ export default function NewSalePage() {
 
   const mutation = useMutation({
     mutationFn: (data: CreateSalePayload) => salesApi.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sales'] }); navigate('/sales') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sales'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['stock-expiry'] })
+      qc.invalidateQueries({ queryKey: ['stock-low'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      navigate('/sales')
+    },
     onError: () => setError('Failed to record sale. Please try again.'),
   })
 
@@ -128,7 +135,7 @@ export default function NewSalePage() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Discount (TZS)</label>
-          <input type="number" min={0} value={discount} onChange={e => setDiscount(Number(e.target.value))}
+          <input type="number" min={0} value={discount} onChange={e => { const v = e.target.value === '' ? 0 : Number(e.target.value); setDiscount(isNaN(v) ? 0 : v) }}
             className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
         </div>
       </div>

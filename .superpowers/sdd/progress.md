@@ -142,6 +142,14 @@ All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
   - Note: synthetic id field added to StockRow/ExpiryAlert/LowStockAlert (Option B) to satisfy DataTable<T extends {id:number}>
 - [x] P7 Task 4: Distributions — list + status badges, create form (product search, qty), confirm receipt (commits e99810b..03cbeb5, review clean)
 - [x] P7 Task 5: POS/Sales — sale list, new sale form with auto price-tier, payment methods, discount, running total (commits 03cbeb5..1a40a99, review clean)
+- [x] P7 Task 6: Purchasing form (batch/expiry tracking), user management list, merged to master (commits 1a40a99..b5b5999, review clean after fixes)
+  - Fix: axios.ts 401 handler now also clears auth_user (stale-auth bug — redirect loop on token expiry)
+  - Fix: RoleRoute wrapper added to /users (admin), /purchases+/distributions/new (admin+sk), /sales/new (admin+seller)
+  - Deferred to v1.1: role as never→as Role, App.tsx cleanup, aria-label on trash btns, htmlFor on form labels, stock/dashboard invalidation after mutations, NaN guards on number inputs
+
+## Phase 7: Frontend Integration — COMPLETE ✓
+
+All 6 tasks complete. 15 Vitest tests passing. TypeScript clean. Backend: 110 Pest tests passing. SPA wired end-to-end: login, dashboard, products, stock, distributions, POS/sales, purchasing, user management.
 - [x] P7 Task 3: Products list (search/pagination), Stock/Inventory view (3 tabs: current/expiry/low), shared DataTable component (12/12 tests pass, tsc clean)
   - Note: DataTable uses Option B (synthetic `id` field on StockRow/ExpiryAlert/LowStockAlert) rather than Option A (keyField prop) — fully working, tsc clean
   - Note: stock.ts adds `id` as alias for product_id/batch_id so DataTable generic `T extends { id: number }` is satisfied
@@ -151,6 +159,19 @@ All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
 
 All 6 tasks complete. 15/15 frontend tests passing. tsc clean. Merged to master.
 Merged to master: feat: complete Phase 7 — React SPA wired to API (auth, dashboard, products, stock, distribution, POS, purchasing, users)
+
+## Phase 8: Pre-Launch Hardening
+
+- [x] P8 Task 1: Login throttle (5/min → 429) + stock views WITH security_invoker=true (commits 4478418..8d1e00e, review clean)
+- [x] P8 Task 2: Reconciliation page — daily seller form, already-submitted detection, cache invalidation (commits 8d1e00e..ae1a2c9, review clean)
+- [x] P8 Task 3: Attendance — clock-in/out with Geolocation API, within/outside geofence display (commits ae1a2c9..b97cc64, review clean)
+- [x] P8 Task 4: Expenses form (6 categories, NaN guard) + P&L report (date range, KPI cards) (commits b97cc64..764583a, review clean)
+  - Note: PDF download link returns 401 (bearer token not sent by browser anchor) — needs signed URL fix pre-prod
+- [x] P8 Task 5: UX polish — cache invalidation after mutations (sale/purchase/dist → stock+dashboard stale), NaN guards on discount/qty/cost inputs, `role as Role` TypeScript cleanup, App.tsx orphan deleted (18/18 tests pass, tsc clean)
+
+## Phase 8: Pre-Launch Hardening — COMPLETE ✓
+
+All 5 tasks complete. 18/18 Vitest tests passing. TypeScript clean. Merged to master.
 
 **Screens delivered:**
 - Login form (email/password, RHF+Zod)
