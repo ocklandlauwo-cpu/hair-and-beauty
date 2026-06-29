@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\LocationController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\V1\PnlController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -72,5 +74,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Reports
         Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
+        Route::get('/reports/weekly', [ReportController::class, 'weekly'])->name('reports.weekly');
+        Route::get('/reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
+
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     });
 });
