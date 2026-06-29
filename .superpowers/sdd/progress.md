@@ -106,6 +106,9 @@ All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
   - Note: expenses/attendance RLS already has explicit USING clauses — no fix needed (different pattern from news)
 - [x] P5 Task 3: Geofenced Attendance API — Haversine clock-in/out, is_within_geofence, seller-scoped list (commits a48a8a7..74f3ca3, review clean)
   - Note: distance_m not persisted (computed on-the-fly); recorded_at can be backdated (design choice)
+- [x] P5 Task 4: P&L Report — GET /reports/pnl, revenue/COGS/gross/expenses/net, seller auto-scoped, reverted-sales excluded (commits 74f3ca3..2b3404e, review clean)
+  - Advisory: revenue + COGS are two separate DB queries; could be combined for efficiency
+  - Advisory: third test uses DB::table('products')->first() instead of fixture prodId — fragile if isolation degrades
 - [x] P5 Task 4: P&L Report API — GET /reports/pnl (revenue, COGS, gross profit, expenses, net profit, expense_breakdown)
   - Formula: Revenue/COGS from non-reverted sale_items; Net Profit = Gross Profit − Expenses; bcsub() for subtraction
   - Seller auto-scoped to their location_id; admin/store_keeper pass ?location_id= query param
@@ -113,23 +116,26 @@ All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
   - Fix: brief test used PostgreSQL's `json_encode(...)` (doesn't exist); corrected to PHP interpolation pattern matching AttendanceTest
   - Full suite: 99/99 tests passing. PHPStan clean. Pint formatted.
 
+## Phase 6: Reporting, Dashboards, Email Reports & UAT
+
+- [x] P6 Task 1: Dashboard API — GET /dashboard, 3 role-specific responses (commits 65214c7..9f8f897, review clean)
+  - Note: match() replaced with if/elseif/else to satisfy PHPStan; else falls through to sellerData() (safe for 3-role system)
+- [x] P6 Task 2: PDF Report Service — Blade templates (weekly/monthly), dompdf A4, GET /reports/weekly|monthly (commits 9f8f897..ee370d9, review clean)
+  - Minor: $type param in ReportService::gatherData() accepted but unused — cleanup candidate
+- [x] P6 Task 3: Scheduled Email Reports — reports:send-weekly/monthly commands, dry-run, scheduler config, .env.example SMTP (commits ee370d9..25b83ec, review clean)
+  - Note: $from/$to renamed to $dateFrom/$dateTo in Mailables (parent Mailable owns those names)
+  - Minor: no error handling in commands — exceptions bubble to artisan (acceptable for Phase 6)
+- [x] P6 Task 4: UAT Seed Data — UatSeeder, UatProductSeeder, UatSalesSeeder (200 products, 3-month history)
+  - Seeds: 200 products (100 hair + 100 cosmetics), 1 admin + 1 store keeper + 3 sellers, 30 purchases, 39 distributions, ~1600 sales, stock movements, monthly expenses
+  - Test: 1 new test (6 assertions), full suite 110/110 passing. PHPStan clean. Pint formatted.
+  - Runtime: ~5s in test suite (well within budget), ~30–60s for production db:seed
+
+## Phase 6: Reporting & Dashboards — COMPLETE ✓
+
+All 4 tasks complete. 110 tests passing. PHPStan clean. Pint formatted.
+Merged to master: feat: complete Phase 6 — dashboards, PDF reports, scheduler, UAT seed data
+
 ## Phase 5: Supporting modules — COMPLETE ✓
 
 All 4 tasks complete. 99 tests passing. PHPStan clean. Pint formatted.
 Merged to master: feat: complete Phase 5 — news, expenses, geofenced attendance, P&L report
-
-## Phase 6: Reporting & Dashboards
-
-Planned tasks (branch: feature/phase-6-reporting-dashboards):
-
-- [ ] P6 Task 1: Dashboard summary endpoint — GET /dashboard/summary (stock levels, recent sales, expense totals, low-stock count)
-- [ ] P6 Task 2: Sales report — GET /reports/sales (by location, product, date range; aggregated via sale_items)
-- [ ] P6 Task 3: Inventory report — GET /reports/inventory (v_current_stock with restock rate, 3-month velocity)
-- [ ] P6 Task 4: Restock alerts — GET /stock/alerts/restock (shift-between-shops logic, 3-month restock rate)
-- [ ] P6 Task 5: Notifications polling endpoint — GET /notifications (low-stock, expiry, pending distributions)
-
-**Phase 6 scope notes:**
-- All endpoints read-only (no new migrations needed beyond Phase 3 views)
-- Dashboard aggregates from v_current_stock + sales/expense tables
-- Restock alerts deferred from Phase 5 (complex analytics requiring 3-month lookback window)
-- Follow same GUC/RLS/policy/form-request pattern established in Phase 4
