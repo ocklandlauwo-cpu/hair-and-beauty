@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Download } from 'lucide-react'
 import { pnlApi } from '@/api/expenses'
+import { reportsApi, triggerBlobDownload } from '@/api/reports'
 
 const thisMonth = new Date()
 const defaultFrom = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, '0')}-01`
@@ -13,6 +15,24 @@ function formatTzs(value: string) {
 export default function PnlPage() {
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    setDownloadError(null)
+    try {
+      const res = await reportsApi.downloadMonthly()
+      triggerBlobDownload(
+        new Blob([res.data as BlobPart], { type: 'application/pdf' }),
+        `monthly-report-${from}-${to}.pdf`,
+      )
+    } catch {
+      setDownloadError('Download failed. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['pnl', from, to],
@@ -43,14 +63,17 @@ export default function PnlPage() {
         >
           {isLoading ? 'Loading…' : 'Generate Report'}
         </button>
-        <a
-          href="/api/v1/reports/monthly"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center rounded-md border border-gray-200 px-4 h-10 text-sm text-gray-600 hover:bg-gray-50"
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-2 rounded-md border border-gray-200 px-4 h-10 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
-          Download Monthly PDF
-        </a>
+          <Download size={14} />
+          {downloading ? 'Downloading…' : 'Download Monthly PDF'}
+        </button>
+        {downloadError && (
+          <p className="text-sm text-red-600">{downloadError}</p>
+        )}
       </div>
 
       {/* Results */}
