@@ -125,6 +125,64 @@ All 5 tasks complete. 81 tests passing. PHPStan clean. Pint formatted.
 - [x] P6 Task 3: Scheduled Email Reports — reports:send-weekly/monthly commands, dry-run, scheduler config, .env.example SMTP (commits ee370d9..25b83ec, review clean)
   - Note: $from/$to renamed to $dateFrom/$dateTo in Mailables (parent Mailable owns those names)
   - Minor: no error handling in commands — exceptions bubble to artisan (acceptable for Phase 6)
+- [x] P6 Task 4: UAT Seed Data — 200 products (HAIR/COS), 30 purchases, 13 distributions/shop, 90-day sales, monthly expenses (commits 25b83ec..82d0a75, review clean after fix)
+  - Fix: rand(1,5) → rand(1,20) so wholesale tier (~45% of sales) is actually seeded (82d0a75)
+  - Advisory: $shopIdx unused in foreach; no DB::transaction() wrapper; updated_at absent from stock_movements (tests pass)
+  - Also: fix(middleware) prepend SetDbSessionContext to api group — correct, ensures GUC is set before throttle/other middleware
+
+## Phase 7: Frontend Integration
+
+- [x] P7 Task 1: Auth flow — AuthContext, ProtectedRoute, LoginPage (RHF+Zod v4), role-filtered sidebar, header logout (commits 82d0a75..a53f73a, review clean)
+  - Minor: `l.roles.includes(role as never)` smell in Sidebar — replace with `role as Role`
+  - Minor: AppLayout.test.tsx updated (needed AuthProvider — correct, not spec deviation)
+  - Note: App.tsx orphaned (bypassed by main.tsx) — cleanup debt
+- [x] P7 Task 2: Dashboard page + StatCard + Badge + API clients (commits a53f73a..e7e9b29, review clean)
+  - Note: vi.mock used instead of enabled:false (TanStack Query v5 — enabled:false yields isLoading:false)
+- [x] P7 Task 3: Products list (search/pagination), Stock tabbed view (current/expiry/low), DataTable component (commits e7e9b29..e99810b, review clean)
+  - Note: synthetic id field added to StockRow/ExpiryAlert/LowStockAlert (Option B) to satisfy DataTable<T extends {id:number}>
+- [x] P7 Task 4: Distributions — list + status badges, create form (product search, qty), confirm receipt (commits e99810b..03cbeb5, review clean)
+- [x] P7 Task 5: POS/Sales — sale list, new sale form with auto price-tier, payment methods, discount, running total (commits 03cbeb5..1a40a99, review clean)
+- [x] P7 Task 3: Products list (search/pagination), Stock/Inventory view (3 tabs: current/expiry/low), shared DataTable component (12/12 tests pass, tsc clean)
+  - Note: DataTable uses Option B (synthetic `id` field on StockRow/ExpiryAlert/LowStockAlert) rather than Option A (keyField prop) — fully working, tsc clean
+  - Note: stock.ts adds `id` as alias for product_id/batch_id so DataTable generic `T extends { id: number }` is satisfied
+- [x] P7 Task 6: Purchasing form, user management list, routes /purchases /purchases/new /users (15/15 tests pass, tsc clean)
+
+## Phase 7: Frontend Integration — COMPLETE ✓
+
+All 6 tasks complete. 15/15 frontend tests passing. tsc clean. Merged to master.
+Merged to master: feat: complete Phase 7 — React SPA wired to API (auth, dashboard, products, stock, distribution, POS, purchasing, users)
+
+**Screens delivered:**
+- Login form (email/password, RHF+Zod)
+- Auth state (localStorage, AuthContext, ProtectedRoute)
+- Role-based nav sidebar + header logout
+- Dashboard — 3 role-specific KPI sets + news feed
+- Product list (search, pagination)
+- Stock view (3 tabs: current / expiry alerts / low stock)
+- Distribution list + status badges, create form, confirm receipt
+- Sale list, new sale form (auto price-tier, payment methods, discount)
+- Purchase list, record purchase form (product search, batch/expiry per line)
+- User management list (admin only)
+
+**Deferred to v1.1 (post-launch):**
+- Reconciliation form (POST /reconciliations)
+- Attendance clock-in/out UI
+- Expenses page
+- P&L report UI (charts + date picker)
+- Sale revert admin action
+- Product create/edit form
+- Full news management UI (create/edit/publish)
+- App.tsx cleanup (orphaned, bypassed by main.tsx)
+- Sidebar: replace `role as never` cast with `role as Role`
+
+## Phase 6: Reporting, Dashboards, Email Reports & UAT — COMPLETE ✓
+
+All 4 tasks complete. 110 tests passing. PHPStan clean. Pint formatted. Merged to master (e45b0f7).
+
+**Operational follow-ups (pre-production, non-blocking for Phase 7):**
+1. CRITICAL-PRE-PROD: Recreate v_current_stock, v_low_stock_alerts, v_expiry_alerts WITH (security_invoker=true) — views currently bypass RLS (owner=hairbeauty_owner has BYPASSRLS); seller low_stock_count only correct because of explicit WHERE clause, not RLS
+2. Deploy checklist: Add OS cron entry (* * * * * php artisan schedule:run) + set APP_TIMEZONE=Africa/Dar_es_Salaam in production .env — otherwise scheduled reports never fire
+3. UAT note: Stock can show negative values for products sold but never distributed — cosmetic, acceptable for demo
 - [x] P6 Task 4: UAT Seed Data — UatSeeder, UatProductSeeder, UatSalesSeeder (200 products, 3-month history)
   - Seeds: 200 products (100 hair + 100 cosmetics), 1 admin + 1 store keeper + 3 sellers, 30 purchases, 39 distributions, ~1600 sales, stock movements, monthly expenses
   - Test: 1 new test (6 assertions), full suite 110/110 passing. PHPStan clean. Pint formatted.

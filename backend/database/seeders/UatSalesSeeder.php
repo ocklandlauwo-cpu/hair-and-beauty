@@ -118,7 +118,7 @@ class UatSalesSeeder extends Seeder
                 $saleCount = rand(3, 8);
                 for ($s = 0; $s < $saleCount; $s++) {
                     $product = $products->random();
-                    $qty = rand(1, 5);
+                    $qty = rand(1, 20); // allows wholesale (>=12) sales to occur
                     $isBulk = $qty >= 12;
                     $price = $isBulk ? $product->wholesale_price : $product->retail_price;
                     $total = $price * $qty;
