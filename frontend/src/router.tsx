@@ -14,6 +14,7 @@ import NewSalePage from '@/pages/sales/NewSalePage'
 import PurchasesPage from '@/pages/PurchasesPage'
 import NewPurchasePage from '@/pages/purchases/NewPurchasePage'
 import UsersPage from '@/pages/UsersPage'
+import ProductFormPage from '@/pages/products/ProductFormPage'
 import ReconciliationPage from '@/pages/ReconciliationPage'
 import AttendancePage from '@/pages/AttendancePage'
 import ExpensesPage from '@/pages/ExpensesPage'
@@ -46,6 +47,8 @@ export const router = createBrowserRouter([
             element: <RoleRoute allow={['admin']} />,
             children: [
               { path: 'users', element: <UsersPage /> },
+              { path: 'products/new', element: <ProductFormPage /> },
+              { path: 'products/:id/edit', element: <ProductFormPage /> },
             ],
           },
           // Admin + store_keeper
