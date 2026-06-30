@@ -191,6 +191,12 @@ All 5 tasks complete. 18/18 Vitest tests passing. TypeScript clean. Merged to ma
 
 - [x] P9 Task 1: PDF download via Axios blob — reportsApi + triggerBlobDownload + PnlPage button (commits d8692c6..3dfedcd, review clean)
 - [x] P9 Task 2: Deployment config — .env.production.example, ops/deploy.sh, ops/DEPLOYMENT.md (commits 3dfedcd..ebfc9e6, review clean)
+- [x] P9 Task 3: migrate:from-mysql scaffold — mysql_legacy connection, --dry-run, 4 entity migrators with CUSTOMISE markers (commits ebfc9e6..a310943, review clean)
+
+## Phase 9: Go-Live — COMPLETE ✓
+
+All 3 tasks complete. 112 Pest tests + 19 Vitest tests. Merged to master.
+Full pre-launch checklist: PDF download fixed, deployment runbook written, migration scaffold ready for business to customise column names.
 - [x] P9 Task 3: Legacy MySQL migration scaffold — mysql_legacy DB connection, LEGACY_DB_* .env vars, migrate:from-mysql artisan command (--dry-run graceful failure), 1 new test; 112/112 Pest tests passing. PHPStan clean. Pint formatted. Merged to master.
 
 **Screens delivered:**
@@ -238,3 +244,22 @@ Merged to master: feat: complete Phase 6 — dashboards, PDF reports, scheduler,
 
 All 4 tasks complete. 99 tests passing. PHPStan clean. Pint formatted.
 Merged to master: feat: complete Phase 5 — news, expenses, geofenced attendance, P&L report
+- P10 Task 1: Product create/edit form (ProductFormPage, categoriesApi, productsApi.create/update) — COMPLETE (commits 70a961e..fc8e12c, review clean)
+- P10 Task 2: Sale revert action + confirm modal (SalesPage.tsx) — COMPLETE (commits fc8e12c..3d4594c, review clean; minor pre-existing: New Sale Link px-4 vs px-6)
+- P10 Task 3: News management page (NewsPage, newsApi CRUD, /news route) — COMPLETE (commits 3d4594c..12843dd, review clean)
+
+## Phase 10: v1.1 Frontend Completions — COMPLETE ✓
+
+All 3 tasks complete. 23 Vitest tests passing. TypeScript clean. Merged to master.
+Commits: fc8e12c (product form), 3d4594c (sale revert), 12843dd (news page), e662191 (fixes)
+
+## Phase 11: Reconciliation Verification + Accessibility
+
+- P11 Task 1: Reconciliation verification — POST /reconciliations/:id/verify, VerifyReconciliationController, 3 Pest tests, reconciliationsApi.verify(), Verify button in ReconciliationPage — COMPLETE (commits bc2bcd9..1d9d6ff, review clean; fixes: scoped per-row pending state, onError added)
+- P11 Task 2: Accessibility — aria-label on Trash2 buttons (sale/purchase/distribution), htmlFor/id on unlabeled form controls — COMPLETE (commits 1d9d6ff..b1cbb13, review clean)
+- Final review fixes: error element outside alreadySubmittedToday conditional, receipt_path in FIELDS, setSuccess(false) in onError (commit 89a525d)
+
+## Phase 11: Reconciliation Verification + Accessibility — COMPLETE ✓
+
+All 2 tasks complete. 115 Pest tests + 23 Vitest tests passing. TypeScript clean. All commits on master.
+Commits: 91ed9be (verify endpoint), 1d9d6ff (per-row pending fix), b1cbb13 (a11y), 89a525d (final fixes)
