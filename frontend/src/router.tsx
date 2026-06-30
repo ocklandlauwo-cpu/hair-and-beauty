@@ -19,6 +19,7 @@ import ReconciliationPage from '@/pages/ReconciliationPage'
 import AttendancePage from '@/pages/AttendancePage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import PnlPage from '@/pages/PnlPage'
+import NewsPage from '@/pages/NewsPage'
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: 'reconciliations', element: <ReconciliationPage /> },
           { path: 'attendance', element: <AttendancePage /> },
           { path: 'expenses', element: <ExpensesPage /> },
+          { path: 'news', element: <NewsPage /> },
           // Admin only
           {
             element: <RoleRoute allow={['admin']} />,
