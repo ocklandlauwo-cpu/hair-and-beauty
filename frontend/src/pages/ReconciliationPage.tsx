@@ -50,6 +50,7 @@ export default function ReconciliationPage() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setError(msg ?? 'Failed to verify reconciliation.')
+      setSuccess(false)
     },
   })
 
@@ -156,6 +157,9 @@ export default function ReconciliationPage() {
       )}
 
       {/* History */}
+      {error && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Reconciliation History</h2>
         <DataTable

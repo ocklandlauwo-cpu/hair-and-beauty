@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class VerifyReconciliationController extends Controller
 {
     private const FIELDS = ['id', 'location_id', 'seller_id', 'reconciliation_date',
-        'total_sold_amount', 'notes', 'verified_by', 'verified_at'];
+        'total_sold_amount', 'receipt_path', 'notes', 'verified_by', 'verified_at'];
 
     public function __invoke(Request $request, Reconciliation $reconciliation): JsonResponse
     {
