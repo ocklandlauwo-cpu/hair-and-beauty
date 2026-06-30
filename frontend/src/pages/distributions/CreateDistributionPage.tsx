@@ -54,8 +54,8 @@ export default function CreateDistributionPage() {
       <h1 className="text-xl font-semibold text-gray-900">New Distribution</h1>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Destination Shop</label>
-        <select value={toLocationId} onChange={e => setToLocationId(e.target.value)} required
+        <label htmlFor="dist-dest" className="block text-sm font-medium text-gray-700">Destination Shop</label>
+        <select id="dist-dest" value={toLocationId} onChange={e => setToLocationId(e.target.value)} required
           className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600">
           <option value="">Select shop…</option>
           {shops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -87,7 +87,12 @@ export default function CreateDistributionPage() {
                   onChange={e => setItems(prev => prev.map((i, j) => j === idx ? { ...i, quantity_sent: Number(e.target.value) } : i))}
                   className="w-20 rounded border border-gray-300 h-8 px-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-600" />
                 <span className="text-xs text-gray-400">units</span>
-                <button type="button" onClick={() => setItems(prev => prev.filter((_, j) => j !== idx))} className="text-gray-400 hover:text-red-500">
+                <button
+                  type="button"
+                  onClick={() => setItems(prev => prev.filter((_, j) => j !== idx))}
+                  className="text-gray-400 hover:text-red-500"
+                  aria-label={`Remove ${item.product_name}`}
+                >
                   <Trash2 size={14} />
                 </button>
               </div>

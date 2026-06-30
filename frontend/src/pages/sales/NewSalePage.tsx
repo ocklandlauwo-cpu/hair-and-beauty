@@ -115,7 +115,16 @@ export default function NewSalePage() {
                     </td>
                     <td className="px-4 py-2 text-right text-gray-600">{item.unitPrice.toLocaleString('en-US')}</td>
                     <td className="px-4 py-2 text-right font-medium">{item.lineTotal.toLocaleString('en-US')}</td>
-                    <td className="px-2"><button type="button" onClick={() => setItems(p => p.filter((_, j) => j !== idx))} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button></td>
+                    <td className="px-2">
+                      <button
+                        type="button"
+                        onClick={() => setItems(p => p.filter((_, j) => j !== idx))}
+                        className="text-gray-300 hover:text-red-500"
+                        aria-label={`Remove ${item.product.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -127,15 +136,15 @@ export default function NewSalePage() {
       {/* Payment + discount */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Payment Method</label>
-          <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)}
+          <label htmlFor="sale-payment" className="block text-sm font-medium text-gray-700">Payment Method</label>
+          <select id="sale-payment" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)}
             className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm uppercase focus:outline-none focus:ring-1 focus:ring-primary-600">
             {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Discount (TZS)</label>
-          <input type="number" min={0} value={discount} onChange={e => { const v = e.target.value === '' ? 0 : Number(e.target.value); setDiscount(isNaN(v) ? 0 : v) }}
+          <label htmlFor="sale-discount" className="block text-sm font-medium text-gray-700">Discount (TZS)</label>
+          <input id="sale-discount" type="number" min={0} value={discount} onChange={e => { const v = e.target.value === '' ? 0 : Number(e.target.value); setDiscount(isNaN(v) ? 0 : v) }}
             className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
         </div>
       </div>

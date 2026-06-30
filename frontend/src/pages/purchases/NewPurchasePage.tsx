@@ -108,28 +108,51 @@ export default function NewPurchasePage() {
               <div key={item.product.id} className="rounded-md border border-gray-200 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{item.product.name}</span>
-                  <button type="button" onClick={() => setItems(p => p.filter((_, j) => j !== idx))} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
+                  <button
+                    type="button"
+                    onClick={() => setItems(p => p.filter((_, j) => j !== idx))}
+                    className="text-gray-300 hover:text-red-500"
+                    aria-label={`Remove ${item.product.name}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div>
-                    <label className="text-gray-500">Qty</label>
-                    <input type="number" min={1} value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value === '' ? 1 : Number(e.target.value))}
-                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+                    <label htmlFor={`purchase-qty-${item.product.id}`} className="text-gray-500">Qty</label>
+                    <input
+                      id={`purchase-qty-${item.product.id}`}
+                      type="number" min={1} value={item.quantity}
+                      onChange={e => updateItem(idx, 'quantity', e.target.value === '' ? 1 : Number(e.target.value))}
+                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                    />
                   </div>
                   <div>
-                    <label className="text-gray-500">Cost (TZS)</label>
-                    <input type="number" min={0} value={item.unit_cost} onChange={e => updateItem(idx, 'unit_cost', e.target.value === '' ? 0 : Number(e.target.value))}
-                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+                    <label htmlFor={`purchase-cost-${item.product.id}`} className="text-gray-500">Cost (TZS)</label>
+                    <input
+                      id={`purchase-cost-${item.product.id}`}
+                      type="number" min={0} value={item.unit_cost}
+                      onChange={e => updateItem(idx, 'unit_cost', e.target.value === '' ? 0 : Number(e.target.value))}
+                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                    />
                   </div>
                   <div>
-                    <label className="text-gray-500">Batch #</label>
-                    <input type="text" value={item.batch_number} onChange={e => updateItem(idx, 'batch_number', e.target.value)}
-                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+                    <label htmlFor={`purchase-batch-${item.product.id}`} className="text-gray-500">Batch #</label>
+                    <input
+                      id={`purchase-batch-${item.product.id}`}
+                      type="text" value={item.batch_number}
+                      onChange={e => updateItem(idx, 'batch_number', e.target.value)}
+                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                    />
                   </div>
                   <div>
-                    <label className="text-gray-500">Expiry</label>
-                    <input type="date" value={item.expiry_date} onChange={e => updateItem(idx, 'expiry_date', e.target.value)}
-                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+                    <label htmlFor={`purchase-expiry-${item.product.id}`} className="text-gray-500">Expiry</label>
+                    <input
+                      id={`purchase-expiry-${item.product.id}`}
+                      type="date" value={item.expiry_date}
+                      onChange={e => updateItem(idx, 'expiry_date', e.target.value)}
+                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                    />
                   </div>
                 </div>
               </div>
