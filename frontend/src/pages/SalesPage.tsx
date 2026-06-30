@@ -20,7 +20,8 @@ export default function SalesPage() {
   })
 
   const revertMutation = useMutation({
-    mutationFn: () => salesApi.revert(revertId!, revertReason.trim()),
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      salesApi.revert(id, reason),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sales'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
@@ -119,7 +120,7 @@ export default function SalesPage() {
               </button>
               <button
                 disabled={!revertReason.trim() || revertMutation.isPending}
-                onClick={() => revertMutation.mutate()}
+                onClick={() => revertMutation.mutate({ id: revertId!, reason: revertReason.trim() })}
                 className="flex-1 rounded-md bg-red-600 h-10 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {revertMutation.isPending ? 'Reverting…' : 'Confirm Revert'}

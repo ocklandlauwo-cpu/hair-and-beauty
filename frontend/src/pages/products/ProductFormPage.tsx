@@ -26,7 +26,7 @@ export default function ProductFormPage() {
   })
 
   const { data: existing, isLoading: loadingExisting } = useQuery({
-    queryKey: ['products', Number(id)],
+    queryKey: isEdit ? ['products', Number(id)] : ['products-new'],
     queryFn: () => productsApi.show(Number(id!)).then(r => r.data.data),
     enabled: isEdit,
   })
