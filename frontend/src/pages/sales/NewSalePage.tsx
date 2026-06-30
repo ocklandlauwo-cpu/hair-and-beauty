@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
 import { salesApi, type CreateSalePayload } from '@/api/sales'
 import { productsApi, type Product } from '@/api/products'
+import { clientsApi } from '@/api/clients'
 
 const PAYMENT_METHODS = ['nmb', 'airtel', 'vodacom', 'tigo'] as const
 
@@ -26,11 +27,19 @@ export default function NewSalePage() {
   const qc = useQueryClient()
   const [paymentMethod, setPaymentMethod] = useState<typeof PAYMENT_METHODS[number]>('nmb')
   const [discount, setDiscount] = useState(0)
+  const [clientId, setClientId] = useState<number | ''>('')
   const [items, setItems] = useState<LineItem[]>([])
   const [productSearch, setProductSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const { data: products } = useQuery({ queryKey: ['products', 'all'], queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data) })
+  const { data: products } = useQuery({
+    queryKey: ['products', 'all'],
+    queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data),
+  })
+  const { data: clients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsApi.list().then(r => r.data.data),
+  })
 
   const mutation = useMutation({
     mutationFn: (data: CreateSalePayload) => salesApi.create(data),
@@ -61,6 +70,7 @@ export default function NewSalePage() {
     mutation.mutate({
       payment_method: paymentMethod,
       sale_date: new Date().toISOString().split('T')[0],
+      client_id: clientId || undefined,
       discount_amount: discount || undefined,
       items: items.map(i => ({ product_id: i.product.id, quantity: i.quantity })),
     })
@@ -110,8 +120,14 @@ export default function NewSalePage() {
                       <span className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">{item.priceTier}</span>
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <input type="number" min={1} value={item.quantity} onChange={e => updateQty(idx, Number(e.target.value))}
-                        className="w-16 rounded border border-gray-300 h-8 px-2 text-center text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={e => updateQty(idx, Number(e.target.value))}
+                        aria-label={`Quantity for ${item.product.name}`}
+                        className="w-16 rounded border border-gray-300 h-8 px-2 text-center text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                      />
                     </td>
                     <td className="px-4 py-2 text-right text-gray-600">{item.unitPrice.toLocaleString('en-US')}</td>
                     <td className="px-4 py-2 text-right font-medium">{item.lineTotal.toLocaleString('en-US')}</td>
@@ -131,6 +147,26 @@ export default function NewSalePage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Client (optional) */}
+      <div>
+        <label htmlFor="sale-client" className="block text-sm font-medium text-gray-700">
+          Client <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <select
+          id="sale-client"
+          value={clientId}
+          onChange={e => setClientId(e.target.value === '' ? '' : Number(e.target.value))}
+          className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+        >
+          <option value="">— No client —</option>
+          {(clients ?? []).map(c => (
+            <option key={c.id} value={c.id}>
+              {c.name}{c.phone ? ` (${c.phone})` : ''}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Payment + discount */}
