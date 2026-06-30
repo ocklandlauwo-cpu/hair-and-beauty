@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\PnlController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
+use App\Http\Controllers\Api\V1\VerifyReconciliationController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
@@ -62,6 +63,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Reconciliation & User Management
         Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index', 'store']);
+        Route::post('/reconciliations/{reconciliation}/verify', VerifyReconciliationController::class)->name('reconciliations.verify');
         Route::apiResource('/users', UserController::class)->only(['index', 'store', 'update']);
 
         // Expenses

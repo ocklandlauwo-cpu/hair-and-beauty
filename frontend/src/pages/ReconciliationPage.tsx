@@ -2,20 +2,17 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle } from 'lucide-react'
 import { reconciliationsApi, type Reconciliation } from '@/api/reconciliations'
+import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
 
 const today = new Date().toISOString().split('T')[0]
 
-const columns = [
-  { key: 'reconciliation_date', header: 'Date' },
-  { key: 'total_sold_amount', header: 'Total Sold (TZS)', render: (r: Reconciliation) => Number(r.total_sold_amount).toLocaleString('en-US') },
-  { key: 'notes', header: 'Notes', render: (r: Reconciliation) => r.notes ?? '—' },
-  { key: 'verified_by', header: 'Status', render: (r: Reconciliation) => r.verified_by ? <Badge variant="success">Verified</Badge> : <Badge variant="warning">Pending verification</Badge> },
-]
-
 export default function ReconciliationPage() {
+  const { user } = useAuth()
   const qc = useQueryClient()
+  const isAdmin = user?.role === 'admin'
+
   const [amount, setAmount] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +25,7 @@ export default function ReconciliationPage() {
 
   const alreadySubmittedToday = data?.data.some(r => r.reconciliation_date === today) ?? false
 
-  const mutation = useMutation({
+  const submitMutation = useMutation({
     mutationFn: reconciliationsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reconciliations'] })
@@ -45,6 +42,13 @@ export default function ReconciliationPage() {
     },
   })
 
+  const verifyMutation = useMutation({
+    mutationFn: (id: number) => reconciliationsApi.verify(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reconciliations'] })
+    },
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const parsedAmount = Number(amount)
@@ -53,8 +57,40 @@ export default function ReconciliationPage() {
       return
     }
     setError(null)
-    mutation.mutate({ reconciliation_date: today, total_sold_amount: parsedAmount, notes: notes || undefined })
+    submitMutation.mutate({ reconciliation_date: today, total_sold_amount: parsedAmount, notes: notes || undefined })
   }
+
+  const columns = [
+    { key: 'reconciliation_date', header: 'Date' },
+    {
+      key: 'total_sold_amount',
+      header: 'Total Sold (TZS)',
+      render: (r: Reconciliation) => Number(r.total_sold_amount).toLocaleString('en-US'),
+    },
+    { key: 'notes', header: 'Notes', render: (r: Reconciliation) => r.notes ?? '—' },
+    {
+      key: 'verified_by',
+      header: 'Status',
+      render: (r: Reconciliation) =>
+        r.verified_by
+          ? <Badge variant="success">Verified</Badge>
+          : <Badge variant="warning">Pending verification</Badge>,
+    },
+    ...(isAdmin ? [{
+      key: 'verify_action',
+      header: '',
+      render: (r: Reconciliation) => !r.verified_by ? (
+        <button
+          onClick={() => verifyMutation.mutate(r.id)}
+          disabled={verifyMutation.isPending}
+          className="text-xs text-primary-600 hover:underline disabled:opacity-50"
+          aria-label={`Verify reconciliation for ${r.reconciliation_date}`}
+        >
+          Verify
+        </button>
+      ) : null,
+    }] : []),
+  ]
 
   return (
     <div className="space-y-6">
@@ -101,10 +137,10 @@ export default function ReconciliationPage() {
             )}
             <button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={submitMutation.isPending}
               className="w-full rounded-md bg-primary-600 h-10 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
             >
-              {mutation.isPending ? 'Submitting…' : 'Submit Reconciliation'}
+              {submitMutation.isPending ? 'Submitting…' : 'Submit Reconciliation'}
             </button>
           </form>
         </div>
@@ -118,7 +154,12 @@ export default function ReconciliationPage() {
       {/* History */}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Reconciliation History</h2>
-        <DataTable columns={columns} data={data?.data ?? []} isLoading={isLoading} emptyMessage="No reconciliations yet." />
+        <DataTable
+          columns={columns}
+          data={data?.data ?? []}
+          isLoading={isLoading}
+          emptyMessage="No reconciliations yet."
+        />
       </div>
     </div>
   )

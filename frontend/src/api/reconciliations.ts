@@ -24,4 +24,6 @@ export const reconciliationsApi = {
     api.get<PaginatedResponse<Reconciliation>>('/reconciliations', { params: { page } }),
   create: (data: CreateReconciliationPayload) =>
     api.post<ApiResponse<Reconciliation>>('/reconciliations', data),
+  verify: (id: number) =>
+    api.post<ApiResponse<Reconciliation>>(`/reconciliations/${id}/verify`),
 }
