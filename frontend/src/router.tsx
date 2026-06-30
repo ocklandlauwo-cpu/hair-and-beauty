@@ -14,10 +14,12 @@ import NewSalePage from '@/pages/sales/NewSalePage'
 import PurchasesPage from '@/pages/PurchasesPage'
 import NewPurchasePage from '@/pages/purchases/NewPurchasePage'
 import UsersPage from '@/pages/UsersPage'
+import ProductFormPage from '@/pages/products/ProductFormPage'
 import ReconciliationPage from '@/pages/ReconciliationPage'
 import AttendancePage from '@/pages/AttendancePage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import PnlPage from '@/pages/PnlPage'
+import NewsPage from '@/pages/NewsPage'
 
 export const router = createBrowserRouter([
   {
@@ -41,11 +43,14 @@ export const router = createBrowserRouter([
           { path: 'reconciliations', element: <ReconciliationPage /> },
           { path: 'attendance', element: <AttendancePage /> },
           { path: 'expenses', element: <ExpensesPage /> },
+          { path: 'news', element: <NewsPage /> },
           // Admin only
           {
             element: <RoleRoute allow={['admin']} />,
             children: [
               { path: 'users', element: <UsersPage /> },
+              { path: 'products/new', element: <ProductFormPage /> },
+              { path: 'products/:id/edit', element: <ProductFormPage /> },
             ],
           },
           // Admin + store_keeper

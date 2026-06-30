@@ -15,9 +15,24 @@ export interface Product {
   is_active: boolean
 }
 
+export interface ProductPayload {
+  category_id: number
+  name: string
+  sku?: string
+  unit?: string
+  wholesale_threshold?: number
+  wholesale_price: number
+  retail_price: number
+  is_active?: boolean
+}
+
 export const productsApi = {
   list: (params?: { page?: number; search?: string }) =>
     api.get<PaginatedResponse<Product>>('/products', { params }),
   show: (id: number) =>
     api.get<ApiResponse<Product>>(`/products/${id}`),
+  create: (data: ProductPayload) =>
+    api.post<ApiResponse<Product>>('/products', data),
+  update: (id: number, data: Partial<ProductPayload>) =>
+    api.put<ApiResponse<Product>>(`/products/${id}`, data),
 }

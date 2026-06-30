@@ -3,38 +3,33 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/contexts/AuthContext'
-import SalesPage from './SalesPage'
+import NewsPage from './NewsPage'
 
-vi.mock('@/api/sales', () => ({
-  salesApi: {
+vi.mock('@/api/news', () => ({
+  newsApi: {
     list: () => new Promise(() => {}),
     create: vi.fn(),
-    revert: vi.fn(),
+    update: vi.fn(),
+    destroy: vi.fn(),
   },
 }))
 
-function renderSales() {
+function renderNews() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
       <AuthProvider>
         <MemoryRouter>
-          <SalesPage />
+          <NewsPage />
         </MemoryRouter>
       </AuthProvider>
     </QueryClientProvider>
   )
 }
 
-describe('SalesPage', () => {
+describe('NewsPage', () => {
   it('renders heading', () => {
-    renderSales()
-    expect(screen.getByRole('heading', { name: /sales/i })).toBeInTheDocument()
-  })
-
-  it('shows New Sale button for default auth user', () => {
-    renderSales()
-    // AuthProvider defaults to no user → button absent (guard: seller || admin)
-    expect(screen.queryByRole('link', { name: /new sale/i })).not.toBeInTheDocument()
+    renderNews()
+    expect(screen.getByRole('heading', { name: /news/i })).toBeInTheDocument()
   })
 })
