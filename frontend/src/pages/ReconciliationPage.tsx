@@ -47,6 +47,10 @@ export default function ReconciliationPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reconciliations'] })
     },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setError(msg ?? 'Failed to verify reconciliation.')
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -82,7 +86,7 @@ export default function ReconciliationPage() {
       render: (r: Reconciliation) => !r.verified_by ? (
         <button
           onClick={() => verifyMutation.mutate(r.id)}
-          disabled={verifyMutation.isPending}
+          disabled={verifyMutation.isPending && verifyMutation.variables === r.id}
           className="text-xs text-primary-600 hover:underline disabled:opacity-50"
           aria-label={`Verify reconciliation for ${r.reconciliation_date}`}
         >
