@@ -14,8 +14,11 @@ class ExpenseController extends Controller
     public function index(): JsonResponse
     {
         $this->authorize('viewAny', Expense::class);
-        $expenses = Expense::latest('expense_date')->paginate(50);
-        $paged = $expenses->through(fn ($e) => $e->only(self::FIELDS));
+        $expenses = Expense::with('location')->latest('expense_date')->paginate(50);
+        $paged = $expenses->through(fn ($e) => array_merge(
+            $e->only(self::FIELDS),
+            ['location_name' => $e->location?->name],
+        ));
 
         return response()->json([
             'data' => $paged->items(),

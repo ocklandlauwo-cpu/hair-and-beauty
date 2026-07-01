@@ -5,8 +5,19 @@ import { Plus, Trash2 } from 'lucide-react'
 import { salesApi, type CreateSalePayload } from '@/api/sales'
 import { productsApi, type Product } from '@/api/products'
 import { clientsApi } from '@/api/clients'
+import { locationsApi } from '@/api/locations'
+import { stockApi } from '@/api/stock'
+import { useAuth } from '@/contexts/AuthContext'
 
-const PAYMENT_METHODS = ['nmb', 'airtel', 'vodacom', 'tigo'] as const
+const PAYMENT_METHODS = ['nmb', 'airtel', 'vodacom', 'tigo', 'cash'] as const
+
+const PAYMENT_LABELS: Record<typeof PAYMENT_METHODS[number], string> = {
+  nmb:     'NMB',
+  airtel:  'AIRTEL (LIPA)',
+  vodacom: 'VODACOM (LIPA)',
+  tigo:    'TIGO (LIPA)',
+  cash:    'CASH',
+}
 
 interface LineItem {
   product: Product
@@ -25,9 +36,13 @@ function computeItem(product: Product, quantity: number): LineItem {
 export default function NewSalePage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
   const [paymentMethod, setPaymentMethod] = useState<typeof PAYMENT_METHODS[number]>('nmb')
   const [discount, setDiscount] = useState(0)
   const [clientId, setClientId] = useState<number | ''>('')
+  const [locationId, setLocationId] = useState<number | ''>('')
   const [items, setItems] = useState<LineItem[]>([])
   const [productSearch, setProductSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +55,26 @@ export default function NewSalePage() {
     queryKey: ['clients'],
     queryFn: () => clientsApi.list().then(r => r.data.data),
   })
+  const { data: locationsData } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+    enabled: isAdmin,
+  })
+  const { data: stockData } = useQuery({
+    queryKey: ['stock'],
+    queryFn: () => stockApi.current().then(r => r.data.data),
+  })
+
+  // product_id → stock qty for the active selling location
+  const stockAtLocation = useMemo(() => {
+    const effectiveLocId = isAdmin ? (locationId || null) : (user?.location_id ?? null)
+    if (!effectiveLocId || !stockData) return null
+    const map = new Map<number, number>()
+    for (const row of stockData) {
+      if (row.location_id === effectiveLocId) map.set(row.product_id, row.current_stock)
+    }
+    return map
+  }, [stockData, locationId, isAdmin, user?.location_id])
 
   const mutation = useMutation({
     mutationFn: (data: CreateSalePayload) => salesApi.create(data),
@@ -57,19 +92,25 @@ export default function NewSalePage() {
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.lineTotal, 0), [items])
   const total = Math.max(0, subtotal - discount)
 
-  const filtered = (products ?? []).filter(p =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) && !items.find(i => i.product.id === p.id)
-  )
+  const filtered = (products ?? []).filter(p => {
+    if (!p.name.toLowerCase().includes(productSearch.toLowerCase())) return false
+    if (items.find(i => i.product.id === p.id)) return false
+    // hide products with no stock at the selling location
+    if (stockAtLocation && (stockAtLocation.get(p.id) ?? 0) <= 0) return false
+    return true
+  })
 
   const addProduct = (p: Product) => { setItems(prev => [...prev, computeItem(p, 1)]); setProductSearch('') }
   const updateQty = (idx: number, qty: number) => setItems(prev => prev.map((i, j) => j === idx ? computeItem(i.product, qty) : i))
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (items.length === 0) { setError('Add at least one product.'); return }
+    if (isAdmin && !locationId) { setError('Select a location for this sale.'); return }
     mutation.mutate({
       payment_method: paymentMethod,
       sale_date: new Date().toISOString().split('T')[0],
+      location_id: isAdmin && locationId ? Number(locationId) : undefined,
       client_id: clientId || undefined,
       discount_amount: discount || undefined,
       items: items.map(i => ({ product_id: i.product.id, quantity: i.quantity })),
@@ -80,12 +121,40 @@ export default function NewSalePage() {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-xl font-semibold text-gray-900">New Sale</h1>
 
+      {/* Admin-only: location selector */}
+      {isAdmin && (
+        <div>
+          <label htmlFor="sale-location" className="block text-sm font-medium text-gray-700">
+            Sale Location <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="sale-location"
+            value={locationId}
+            onChange={e => setLocationId(e.target.value === '' ? '' : Number(e.target.value))}
+            className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            required
+          >
+            <option value="">— Select location —</option>
+            {(locationsData ?? []).filter(l => l.is_active).map(l => (
+              <option key={l.id} value={l.id}>
+                {l.name} ({l.type})
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-400">Stock will be deducted from this location.</p>
+        </div>
+      )}
+
       {/* Product search */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Products</label>
         <div className="relative">
           <input type="text" placeholder="Search products to add…" value={productSearch} onChange={e => setProductSearch(e.target.value)}
-            className="block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+            disabled={isAdmin && !locationId}
+            className="block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600 disabled:bg-gray-50 disabled:text-gray-400" />
+          {isAdmin && !locationId && (
+            <p className="mt-1 text-xs text-gray-400">Select a location above to see available stock.</p>
+          )}
           {productSearch && filtered.length > 0 && (
             <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
               {filtered.slice(0, 8).map(p => (
@@ -175,7 +244,7 @@ export default function NewSalePage() {
           <label htmlFor="sale-payment" className="block text-sm font-medium text-gray-700">Payment Method</label>
           <select id="sale-payment" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)}
             className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm uppercase focus:outline-none focus:ring-1 focus:ring-primary-600">
-            {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+            {PAYMENT_METHODS.map(m => <option key={m} value={m}>{PAYMENT_LABELS[m]}</option>)}
           </select>
         </div>
         <div>

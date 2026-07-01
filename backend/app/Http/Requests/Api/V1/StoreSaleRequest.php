@@ -14,10 +14,11 @@ class StoreSaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method' => ['required', 'in:nmb,airtel,vodacom,tigo'],
+            'payment_method' => ['required', 'in:nmb,airtel,vodacom,tigo,cash'],
             'sale_date' => ['required', 'date'],
             'client_id' => ['nullable', 'integer', 'exists:clients,id'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

@@ -39,6 +39,11 @@ class SaleController extends Controller
         $validated = $request->validated();
 
         $sale = DB::transaction(function () use ($validated, $user) {
+            // Admin can target any location; sellers are bound to their own location.
+            $locationId = ($user->role === 'admin' && ! empty($validated['location_id']))
+                ? $validated['location_id']
+                : $user->location_id;
+
             $totalAmount = '0';
             $itemsToInsert = [];
 
@@ -62,7 +67,7 @@ class SaleController extends Controller
             $discount = $validated['discount_amount'] ?? 0;
 
             $sale = Sale::create([
-                'location_id' => $user->location_id,
+                'location_id' => $locationId,
                 'sold_by' => $user->id,
                 'client_id' => $validated['client_id'] ?? null,
                 'payment_method' => $validated['payment_method'],
@@ -76,7 +81,7 @@ class SaleController extends Controller
 
                 StockMovement::create([
                     'product_id' => $itemData['product_id'],
-                    'location_id' => $user->location_id,
+                    'location_id' => $locationId,
                     'movement_type' => 'sale',
                     'quantity' => -$itemData['quantity'],
                     'reference_type' => 'sale',

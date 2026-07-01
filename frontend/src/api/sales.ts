@@ -6,7 +6,7 @@ export interface Sale {
   location_id: number
   sold_by: number
   client_id: number | null
-  payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo'
+  payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
   total_amount: string
   discount_amount: string
   is_reverted: boolean
@@ -20,8 +20,9 @@ export interface SaleItem {
 }
 
 export interface CreateSalePayload {
-  payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo'
+  payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
   sale_date: string
+  location_id?: number
   client_id?: number
   discount_amount?: number
   items: SaleItem[]

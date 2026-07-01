@@ -10,6 +10,7 @@ export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number]
 export interface Expense {
   id: number
   location_id: number
+  location_name: string | null
   category: ExpenseCategory
   amount: string
   expense_date: string

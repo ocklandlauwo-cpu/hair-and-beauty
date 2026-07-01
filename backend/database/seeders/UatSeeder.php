@@ -11,6 +11,11 @@ class UatSeeder extends Seeder
 {
     public function run(): void
     {
+        // Seeders run as the app user (RLS-enforced). Set admin GUC so policies pass.
+        DB::statement("SELECT set_config('app.role', 'admin', false)");
+        DB::statement("SELECT set_config('app.user_id', '0', false)");
+        DB::statement("SELECT set_config('app.location_ids', '[]', false)");
+
         $this->call([
             RoleSeeder::class,
             LocationSeeder::class,

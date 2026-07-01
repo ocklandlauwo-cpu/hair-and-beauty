@@ -1,12 +1,26 @@
 import api from '@/lib/axios'
 import type { PaginatedResponse, ApiResponse } from '@/types'
 
+export interface PurchaseItem {
+  id: number
+  product_id: number
+  product_name: string
+  quantity: number
+  unit_cost: string
+  line_total: number
+}
+
 export interface Purchase {
   id: number
   purchased_by: number
   supplier_name: string | null
   invoice_number: string | null
   purchase_date: string
+  total_amount: number
+}
+
+export interface PurchaseDetail extends Purchase {
+  items: PurchaseItem[]
 }
 
 export interface CreatePurchasePayload {
@@ -26,6 +40,8 @@ export interface CreatePurchasePayload {
 export const purchasesApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Purchase>>('/purchases', { params: { page } }),
+  show: (id: number) =>
+    api.get<ApiResponse<PurchaseDetail>>(`/purchases/${id}`),
   create: (data: CreatePurchasePayload) =>
     api.post<ApiResponse<Purchase>>('/purchases', data),
 }

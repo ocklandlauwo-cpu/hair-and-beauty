@@ -62,7 +62,7 @@ export default function NewPurchasePage() {
         product_id: i.product.id,
         quantity: i.quantity,
         unit_cost: i.unit_cost,
-        expiry_date: i.expiry_date || undefined,
+        expiry_date: i.product.category_name !== 'Hair' ? (i.expiry_date || undefined) : undefined,
         batch_number: i.batch_number || undefined,
       })),
     })
@@ -117,7 +117,7 @@ export default function NewPurchasePage() {
                     <Trash2 size={14} />
                   </button>
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
+                <div className={`grid gap-2 text-xs ${item.product.category_name === 'Hair' ? 'grid-cols-3' : 'grid-cols-4'}`}>
                   <div>
                     <label htmlFor={`purchase-qty-${item.product.id}`} className="text-gray-500">Qty</label>
                     <input
@@ -145,15 +145,17 @@ export default function NewPurchasePage() {
                       className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
                     />
                   </div>
-                  <div>
-                    <label htmlFor={`purchase-expiry-${item.product.id}`} className="text-gray-500">Expiry</label>
-                    <input
-                      id={`purchase-expiry-${item.product.id}`}
-                      type="date" value={item.expiry_date}
-                      onChange={e => updateItem(idx, 'expiry_date', e.target.value)}
-                      className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
-                    />
-                  </div>
+                  {item.product.category_name !== 'Hair' && (
+                    <div>
+                      <label htmlFor={`purchase-expiry-${item.product.id}`} className="text-gray-500">Expiry</label>
+                      <input
+                        id={`purchase-expiry-${item.product.id}`}
+                        type="date" value={item.expiry_date}
+                        onChange={e => updateItem(idx, 'expiry_date', e.target.value)}
+                        className="mt-1 block w-full rounded border border-gray-200 h-8 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

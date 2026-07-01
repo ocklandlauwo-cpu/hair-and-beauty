@@ -19,18 +19,28 @@ class PurchaseController extends Controller
         $this->authorize('viewAny', Purchase::class);
         $purchases = Purchase::with('items')->latest()->paginate(50);
 
-        return response()->json($purchases->through(fn ($p) => $p->only([
-            'id', 'purchased_by', 'supplier_name', 'invoice_number', 'purchase_date', 'notes',
-        ])));
+        return response()->json($purchases->through(fn ($p) => array_merge(
+            $p->only(['id', 'purchased_by', 'supplier_name', 'invoice_number', 'purchase_date', 'notes']),
+            ['total_amount' => $p->items->sum(fn ($i) => $i->quantity * (float) $i->unit_cost)],
+        )));
     }
 
     public function show(Purchase $purchase): JsonResponse
     {
         $this->authorize('view', $purchase);
+        $purchase->load('items.product');
 
         return response()->json(['data' => array_merge(
             $purchase->only(['id', 'purchased_by', 'supplier_name', 'invoice_number', 'purchase_date', 'notes']),
-            ['items' => $purchase->items->map->only(['id', 'product_id', 'batch_id', 'quantity', 'unit_cost'])],
+            ['total_amount' => $purchase->items->sum(fn ($i) => $i->quantity * (float) $i->unit_cost)],
+            ['items' => $purchase->items->map(fn ($i) => [
+                'id'           => $i->id,
+                'product_id'   => $i->product_id,
+                'product_name' => $i->product?->name ?? '—',
+                'quantity'     => $i->quantity,
+                'unit_cost'    => $i->unit_cost,
+                'line_total'   => $i->quantity * (float) $i->unit_cost,
+            ])],
         )]);
     }
 

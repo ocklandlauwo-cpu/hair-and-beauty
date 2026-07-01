@@ -5,21 +5,25 @@ export interface Distribution {
   id: number
   from_location_id: number
   to_location_id: number
+  to_location_name: string | null
   distributed_by: number
   confirmed_by: number | null
   status: 'pending' | 'confirmed' | 'discrepancy'
   distributed_at: string
   confirmed_at: string | null
   notes: string | null
-  items?: DistributionItem[]
 }
 
 export interface DistributionItem {
   id: number
-  distribution_id: number
   product_id: number
+  product_name: string
   quantity_sent: number
   quantity_received: number | null
+}
+
+export interface DistributionDetail extends Distribution {
+  items: DistributionItem[]
 }
 
 export interface CreateDistributionPayload {
@@ -37,7 +41,7 @@ export const distributionsApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Distribution>>('/distributions', { params: { page } }),
   show: (id: number) =>
-    api.get<ApiResponse<Distribution>>(`/distributions/${id}`),
+    api.get<ApiResponse<DistributionDetail>>(`/distributions/${id}`),
   create: (data: CreateDistributionPayload) =>
     api.post<ApiResponse<Distribution>>('/distributions', data),
   confirm: (id: number, data: ConfirmDistributionPayload) =>

@@ -19,18 +19,29 @@ class DistributionController extends Controller
     public function index(): JsonResponse
     {
         $this->authorize('viewAny', Distribution::class);
-        $distributions = Distribution::latest()->paginate(50);
+        $distributions = Distribution::with('toLocation')->latest()->paginate(50);
 
-        return response()->json($distributions->through(fn ($d) => $d->only(self::FIELDS)));
+        return response()->json($distributions->through(fn ($d) => array_merge(
+            $d->only(self::FIELDS),
+            ['to_location_name' => $d->toLocation?->name],
+        )));
     }
 
     public function show(Distribution $distribution): JsonResponse
     {
         $this->authorize('viewAny', Distribution::class);
+        $distribution->load('toLocation', 'items.product');
 
         return response()->json(['data' => array_merge(
             $distribution->only(self::FIELDS),
-            ['items' => $distribution->items->map->only(['id', 'product_id', 'batch_id', 'quantity_sent', 'quantity_received'])],
+            ['to_location_name' => $distribution->toLocation?->name],
+            ['items' => $distribution->items->map(fn ($i) => [
+                'id'                => $i->id,
+                'product_id'        => $i->product_id,
+                'product_name'      => $i->product?->name ?? '—',
+                'quantity_sent'     => $i->quantity_sent,
+                'quantity_received' => $i->quantity_received,
+            ])],
         )]);
     }
 
