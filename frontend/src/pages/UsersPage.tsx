@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useController } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,11 +35,11 @@ function makeSchema(mode: 'create' | 'edit') {
 type FormValues = z.infer<ReturnType<typeof makeSchema>>
 
 // ── Modal ──────────────────────────────────────────────────────────────────
-function UserFormModal({ mode, user, onClose }: {
-  mode: 'create' | 'edit'
-  user: User | null
-  onClose: () => void
-}) {
+type ModalProps =
+  | { mode: 'create'; user?: never; onClose: () => void }
+  | { mode: 'edit';   user: User;   onClose: () => void }
+
+function UserFormModal({ mode, user, onClose }: ModalProps) {
   const qc = useQueryClient()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -48,8 +48,10 @@ function UserFormModal({ mode, user, onClose }: {
     queryFn: () => locationsApi.list().then(r => r.data.data),
   })
 
+  const schema = useMemo(() => makeSchema(mode), [mode])
+
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(makeSchema(mode)),
+    resolver: zodResolver(schema),
     defaultValues: mode === 'edit' && user
       ? {
           name:        user.name,
@@ -91,16 +93,19 @@ function UserFormModal({ mode, user, onClose }: {
         is_active:   values.is_active,
       }
       if (values.password) payload.password = values.password
-      return usersApi.update(user!.id, payload)
+      return usersApi.update(user.id, payload)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       onClose()
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message
-      setServerError(msg ?? 'An error occurred. Please try again.')
+      type ApiErr = { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
+      const data = (err as ApiErr)?.response?.data
+      const fieldErrors = data?.errors
+      const firstField = fieldErrors ? Object.values(fieldErrors)[0]?.[0] : undefined
+      const base = data?.message ?? 'An error occurred. Please try again.'
+      setServerError(firstField ? `${base}: ${firstField}` : base)
     },
   })
 
@@ -189,7 +194,9 @@ function UserFormModal({ mode, user, onClose }: {
               ))}
             </select>
             {errors.location_id && (
-              <p className="mt-1 text-xs text-red-600">{errors.location_id.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.location_id.message ?? 'Location is required for sellers.'}
+              </p>
             )}
           </div>
 
@@ -231,7 +238,7 @@ const BASE_COLUMNS = [
   {
     key: 'role',
     header: 'Role',
-    render: (u: User) => <Badge>{u.role.replace('_', ' ')}</Badge>,
+    render: (u: User) => <Badge>{u.role.replace(/_/g, ' ')}</Badge>,
   },
   {
     key: 'is_active',
@@ -255,10 +262,10 @@ export default function UsersPage() {
   })
 
   const openCreate = () => { setEditingUser(null); setModalMode('create') }
-  const openEdit   = (u: User) => { setEditingUser(u); setModalMode('edit') }
+  const openEdit   = useCallback((u: User) => { setEditingUser(u); setModalMode('edit') }, [])
   const closeModal = () => { setModalMode(null); setEditingUser(null) }
 
-  const columns = [
+  const columns = useMemo(() => [
     ...BASE_COLUMNS,
     {
       key: 'actions',
@@ -273,7 +280,7 @@ export default function UsersPage() {
         </button>
       ),
     },
-  ]
+  ], [openEdit])
 
   return (
     <div className="space-y-4">
@@ -294,8 +301,11 @@ export default function UsersPage() {
         emptyMessage="No users found."
       />
 
-      {modalMode && (
-        <UserFormModal mode={modalMode} user={editingUser} onClose={closeModal} />
+      {modalMode === 'edit' && editingUser && (
+        <UserFormModal mode="edit" user={editingUser} onClose={closeModal} />
+      )}
+      {modalMode === 'create' && (
+        <UserFormModal mode="create" onClose={closeModal} />
       )}
     </div>
   )
