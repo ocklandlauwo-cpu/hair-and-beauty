@@ -1,0 +1,381 @@
+import { useState, useMemo, useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm, useController } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod/v4'
+import { Pencil, Plus, X, Search, Trash2 } from 'lucide-react'
+import { clientsApi, type Client } from '@/api/clients'
+import { locationsApi } from '@/api/locations'
+import { useAuth } from '@/contexts/AuthContext'
+import DataTable from '@/components/ui/DataTable'
+import Badge from '@/components/ui/Badge'
+
+// ── Schema ─────────────────────────────────────────────────────────────────
+function makeSchema(mode: 'create' | 'edit', isAdmin: boolean) {
+  return z.object({
+    name:        z.string().min(1, 'Name is required').max(100),
+    phone:       z.string().max(20).nullable().optional(),
+    notes:       z.string().nullable().optional(),
+    location_id: isAdmin && mode === 'create'
+      ? z.number({ error: 'Location is required' })
+      : z.number().nullable().optional(),
+    is_active:   z.boolean().optional(),
+  })
+}
+
+type FormValues = z.infer<ReturnType<typeof makeSchema>>
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+type ModalProps =
+  | { mode: 'create'; client?: never; onClose: () => void; isAdmin: boolean }
+  | { mode: 'edit';   client: Client; onClose: () => void; isAdmin: boolean }
+
+function ClientFormModal({ mode, client, onClose, isAdmin }: ModalProps) {
+  const qc = useQueryClient()
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const { data: locations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+  })
+
+  const schema = useMemo(() => makeSchema(mode, isAdmin), [mode, isAdmin])
+
+  const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: mode === 'edit' && client
+      ? {
+          name:        client.name,
+          phone:       client.phone ?? '',
+          notes:       client.notes ?? '',
+          location_id: client.location_id,
+          is_active:   client.is_active,
+        }
+      : {
+          name:        '',
+          phone:       '',
+          notes:       '',
+          location_id: undefined,
+          is_active:   true,
+        },
+  })
+
+  const { field: locationField } = useController({ name: 'location_id', control })
+
+  const mutation = useMutation({
+    mutationFn: (values: FormValues) => {
+      const phone = values.phone || null
+      const notes = values.notes || null
+
+      if (mode === 'create') {
+        return clientsApi.create({
+          name:        values.name,
+          phone,
+          notes,
+          ...(isAdmin && values.location_id ? { location_id: values.location_id } : {}),
+        })
+      }
+      return clientsApi.update(client.id, {
+        name:        values.name,
+        phone,
+        notes,
+        is_active:   values.is_active,
+        ...(values.location_id ? { location_id: values.location_id } : {}),
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] })
+      onClose()
+    },
+    onError: (err: unknown) => {
+      type ApiErr = { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
+      const data = (err as ApiErr)?.response?.data
+      const fieldErrors = data?.errors
+      const firstField = fieldErrors ? Object.values(fieldErrors)[0]?.[0] : undefined
+      const base = data?.message ?? 'An error occurred. Please try again.'
+      setServerError(firstField ? `${base}: ${firstField}` : base)
+    },
+  })
+
+  const activeLocations = (locations ?? []).filter(l => l.is_active)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold text-gray-900">
+            {mode === 'create' ? 'Add Client' : 'Edit Client'}
+          </h2>
+          <button onClick={onClose} aria-label="Close dialog" className="text-gray-400 hover:text-gray-600">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit(values => { setServerError(null); mutation.mutate(values) })}
+          className="space-y-4"
+        >
+          {/* Name */}
+          <div>
+            <label htmlFor="c-name" className="block text-sm font-medium text-gray-700">Name</label>
+            <input id="c-name" type="text" {...register('name')}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+            {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label htmlFor="c-phone" className="block text-sm font-medium text-gray-700">
+              Phone <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input id="c-phone" type="tel" {...register('phone')}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+            {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="c-notes" className="block text-sm font-medium text-gray-700">
+              Notes <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea id="c-notes" rows={3} {...register('notes')}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600 resize-none" />
+            {errors.notes && <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>}
+          </div>
+
+          {/* Location — admin on create and edit */}
+          {isAdmin && (
+            <div>
+              <label htmlFor="c-location" className="block text-sm font-medium text-gray-700">
+                Shop / Location <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="c-location"
+                value={locationField.value ?? ''}
+                onChange={e => locationField.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                onBlur={locationField.onBlur}
+                className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+              >
+                <option value="">— Select shop —</option>
+                {activeLocations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name} ({l.type})</option>
+                ))}
+              </select>
+              {errors.location_id && (
+                <p className="mt-1 text-xs text-red-600">{errors.location_id.message ?? 'Location is required'}</p>
+              )}
+            </div>
+          )}
+
+          {/* Is Active — edit only */}
+          {mode === 'edit' && (
+            <div className="flex items-center gap-2">
+              <input id="c-active" type="checkbox" {...register('is_active')}
+                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600" />
+              <label htmlFor="c-active" className="text-sm font-medium text-gray-700">Active</label>
+            </div>
+          )}
+
+          {serverError && (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{serverError}</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="h-10 px-4 text-sm text-gray-600 hover:text-gray-800">
+              Cancel
+            </button>
+            <button type="submit" disabled={mutation.isPending}
+              className="h-10 px-4 rounded-md bg-primary-600 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+              {mutation.isPending ? 'Saving…' : mode === 'create' ? 'Add Client' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Table columns ──────────────────────────────────────────────────────────
+const BASE_COLUMNS = [
+  { key: 'name',  header: 'Name' },
+  { key: 'phone', header: 'Phone', render: (c: Client) => c.phone ?? '—' },
+  { key: 'notes', header: 'Notes', render: (c: Client) => c.notes
+    ? <span className="max-w-xs truncate block" title={c.notes}>{c.notes}</span>
+    : '—'
+  },
+  { key: 'location_name', header: 'Shop', render: (c: Client) => c.location_name ?? '—' },
+  {
+    key: 'is_active',
+    header: 'Status',
+    render: (c: Client) => (
+      <Badge variant={c.is_active ? 'success' : 'danger'}>
+        {c.is_active ? 'Active' : 'Inactive'}
+      </Badge>
+    ),
+  },
+]
+
+// ── Page ──────────────────────────────────────────────────────────────────
+export default function ClientsPage() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+  const canWrite = user?.role === 'admin' || user?.role === 'seller'
+
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [pendingToggleId, setPendingToggleId] = useState<number | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+
+  const qc = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['clients', page, search],
+    queryFn: () => clientsApi.list(page, undefined, search || undefined).then(r => r.data),
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
+      clientsApi.update(id, { is_active }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] })
+      setPendingToggleId(null)
+    },
+    onError: () => setPendingToggleId(null),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => clientsApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] })
+      setConfirmDeleteId(null)
+    },
+    onError: () => setConfirmDeleteId(null),
+  })
+
+  const openCreate = () => { setEditingClient(null); setModalMode('create') }
+  const openEdit   = useCallback((c: Client) => { setEditingClient(c); setModalMode('edit') }, [])
+  const closeModal = () => { setModalMode(null); setEditingClient(null) }
+
+  const columns = useMemo(() => [
+    ...BASE_COLUMNS,
+    ...(isAdmin ? [{
+      key: 'actions',
+      header: '',
+      render: (c: Client) => (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => openEdit(c)}
+            aria-label={`Edit ${c.name}`}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+          >
+            <Pencil size={12} /> Edit
+          </button>
+          <button
+            onClick={() => {
+              setPendingToggleId(c.id)
+              toggleMutation.mutate({ id: c.id, is_active: !c.is_active })
+            }}
+            disabled={pendingToggleId === c.id}
+            aria-label={c.is_active ? `Deactivate ${c.name}` : `Activate ${c.name}`}
+            className={`text-xs hover:underline disabled:opacity-50 ${c.is_active ? 'text-orange-500' : 'text-green-600'}`}
+          >
+            {pendingToggleId === c.id ? '…' : c.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+          {confirmDeleteId === c.id ? (
+            <span className="flex items-center gap-2">
+              <button
+                onClick={() => deleteMutation.mutate(c.id)}
+                disabled={deleteMutation.isPending}
+                className="text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? '…' : 'Confirm'}
+              </button>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setConfirmDeleteId(c.id)}
+              aria-label={`Delete ${c.name}`}
+              className="flex items-center gap-1 text-xs text-red-500 hover:underline"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          )}
+        </div>
+      ),
+    }] : []),
+  ], [openEdit, pendingToggleId, toggleMutation.mutate, confirmDeleteId, deleteMutation.isPending])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-gray-900">Clients</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              placeholder="Search name or phone…"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              className="pl-9 pr-3 h-9 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            />
+          </div>
+          {canWrite && (
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 rounded-md bg-primary-600 px-4 h-9 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              <Plus size={16} /> Add Client
+            </button>
+          )}
+        </div>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={data?.data ?? []}
+        isLoading={isLoading}
+        emptyMessage="No clients found."
+      />
+
+      {data && data.meta.last_page > 1 && (
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>Page {data.meta.current_page} of {data.meta.last_page} ({data.meta.total} total)</span>
+          <div className="flex gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="rounded border border-gray-200 px-3 h-8 disabled:opacity-40 hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <button
+              disabled={page === data.meta.last_page}
+              onClick={() => setPage(p => p + 1)}
+              className="rounded border border-gray-200 px-3 h-8 disabled:opacity-40 hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {modalMode === 'edit' && editingClient && (
+        <ClientFormModal mode="edit" client={editingClient} onClose={closeModal} isAdmin={isAdmin} />
+      )}
+      {modalMode === 'create' && (
+        <ClientFormModal mode="create" onClose={closeModal} isAdmin={isAdmin} />
+      )}
+    </div>
+  )
+}

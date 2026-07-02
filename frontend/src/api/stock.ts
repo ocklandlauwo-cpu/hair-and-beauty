@@ -32,8 +32,35 @@ export interface LowStockAlert {
   days_of_cover: number | null
 }
 
+export type MovementType =
+  | 'purchase'
+  | 'distribution_in'
+  | 'distribution_out'
+  | 'sale'
+  | 'sale_revert'
+  | 'adjustment'
+
+export interface StockMovement {
+  id: number
+  movement_type: MovementType
+  quantity: number
+  created_at: string
+}
+
+export interface AdjustPayload {
+  product_id: number
+  location_id: number
+  new_quantity: number
+  notes?: string
+}
+
 export const stockApi = {
   current: () => api.get<{ data: StockRow[] }>('/stock'),
+  movements: (productId: number, locationId: number) =>
+    api.get<{ data: StockMovement[] }>('/stock/movements', {
+      params: { product_id: productId, location_id: locationId },
+    }),
   expiryAlerts: () => api.get<{ data: ExpiryAlert[] }>('/stock/alerts/expiry'),
   lowStockAlerts: () => api.get<{ data: LowStockAlert[] }>('/stock/alerts/low'),
+  adjust: (payload: AdjustPayload) => api.post<{ message: string; new_quantity: number }>('/stock/adjust', payload),
 }

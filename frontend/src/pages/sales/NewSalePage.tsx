@@ -51,9 +51,15 @@ export default function NewSalePage() {
     queryKey: ['products', 'all'],
     queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data),
   })
+  // Effective location: admin picks one, seller uses their own
+  const effectiveLocationId = isAdmin
+    ? (locationId || undefined)
+    : (user?.location_id ?? undefined)
+
   const { data: clients } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => clientsApi.list().then(r => r.data.data),
+    queryKey: ['clients', 'sale', effectiveLocationId],
+    queryFn: () => clientsApi.list(1, effectiveLocationId).then(r => r.data.data),
+    enabled: !!effectiveLocationId,
   })
   const { data: locationsData } = useQuery({
     queryKey: ['locations'],
@@ -130,7 +136,7 @@ export default function NewSalePage() {
           <select
             id="sale-location"
             value={locationId}
-            onChange={e => setLocationId(e.target.value === '' ? '' : Number(e.target.value))}
+            onChange={e => { setLocationId(e.target.value === '' ? '' : Number(e.target.value)); setClientId('') }}
             className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
             required
           >

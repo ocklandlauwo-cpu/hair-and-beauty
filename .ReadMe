@@ -1,0 +1,11 @@
+Admin	admin@hairbeauty.local	admin2026!
+Store Keeper	storekeeper@hairbeauty.local	keeper2026!
+Seller	seller0@hairbeauty.local	seller2026!
+Seller	seller1@hairbeauty.local	seller2026!
+
+#RUN BACKEND
+>>  /c/Laragon/bin/php/php-8.4.12-nts-Win32-vs17-x64/php.exe artisan serve
+
+#RUN FRONTEND
+>> cd frontend
+>> npm run dev

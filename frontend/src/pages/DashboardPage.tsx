@@ -1,13 +1,54 @@
 import { useQuery } from '@tanstack/react-query'
-import { dashboardApi } from '@/api/dashboard'
+import { dashboardApi, type ShopBreakdown } from '@/api/dashboard'
 import { newsApi } from '@/api/news'
 import { useAuth } from '@/contexts/AuthContext'
 import StatCard from '@/components/ui/StatCard'
 
-function formatTzs(value: string | number) {
+function fmtTzs(value: string | number) {
   return `TZS ${Number(value).toLocaleString('en-US')}`
 }
 
+// ── Breakdown card: total + per-shop list ──────────────────────────────────
+interface BreakdownCardProps {
+  label: string
+  total: string
+  shops: ShopBreakdown[]
+  isCurrency?: boolean
+  colorNegative?: boolean
+}
+
+function BreakdownCard({ label, total, shops, isCurrency = true, colorNegative = false }: BreakdownCardProps) {
+  const totalNum = Number(total)
+  const isNeg = colorNegative && totalNum < 0
+
+  return (
+    <div className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm flex flex-col">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+      <p className={`mt-2 text-2xl font-extrabold ${isNeg ? 'text-red-600' : 'text-gray-900'}`}>
+        {isCurrency ? fmtTzs(totalNum) : totalNum.toLocaleString('en-US')}
+      </p>
+
+      {shops.length > 0 && (
+        <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
+          {shops.map(s => {
+            const shopNum = Number(s.total)
+            const shopNeg = colorNegative && shopNum < 0
+            return (
+              <div key={s.location_id} className="flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-500 truncate">{s.location_name}</span>
+                <span className={`text-xs font-semibold shrink-0 ${shopNeg ? 'text-red-500' : 'text-gray-700'}`}>
+                  {isCurrency ? shopNum.toLocaleString('en-US') : shopNum}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth()
 
@@ -38,19 +79,50 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Admin dashboard */}
+      {/* ── Admin dashboard ─────────────────────────────────────────── */}
       {dashData?.role === 'admin' && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          <StatCard label="Sales Today" value={formatTzs(dashData.sales.today)} />
-          <StatCard label="Sales This Month" value={formatTzs(dashData.sales.this_month)} />
-          <StatCard label="Expenses This Month" value={formatTzs(dashData.expenses.this_month)} />
-          <StatCard label="Pending Distributions" value={dashData.distributions.pending} />
-          <StatCard label="Expiry Alerts" value={dashData.stock.expiry_alerts} sub="batches expiring in 60 days" />
-          <StatCard label="Low Stock Alerts" value={dashData.stock.low_stock_alerts} sub="< 30 days cover" />
+        <div className="space-y-4">
+          {/* Sales + Profit breakdown cards (2 col) */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <BreakdownCard
+              label="Sales Today"
+              total={dashData.sales.today}
+              shops={dashData.sales.today_by_shop}
+            />
+            <BreakdownCard
+              label="Sales This Month"
+              total={dashData.sales.this_month}
+              shops={dashData.sales.this_month_by_shop}
+            />
+            <BreakdownCard
+              label="Profit Today"
+              total={dashData.profit.today}
+              shops={dashData.profit.today_by_shop}
+              colorNegative
+            />
+            <BreakdownCard
+              label="Profit This Month"
+              total={dashData.profit.this_month}
+              shops={dashData.profit.this_month_by_shop}
+              colorNegative
+            />
+            <BreakdownCard
+              label="Expenses This Month"
+              total={dashData.expenses.this_month}
+              shops={dashData.expenses.this_month_by_shop}
+            />
+          </div>
+
+          {/* Simple count cards (3 col) */}
+          <div className="grid grid-cols-3 gap-4">
+            <StatCard label="Pending Distributions" value={dashData.distributions.pending} />
+            <StatCard label="Expiry Alerts" value={dashData.stock.expiry_alerts} sub="batches expiring in 60 days" />
+            <StatCard label="Low Stock Alerts" value={dashData.stock.low_stock_alerts} sub="< 30 days cover" />
+          </div>
         </div>
       )}
 
-      {/* Store-keeper dashboard */}
+      {/* ── Store-keeper dashboard ──────────────────────────────────── */}
       {dashData?.role === 'store_keeper' && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
           <StatCard label="Pending Distributions" value={dashData.distributions.pending} />
@@ -61,10 +133,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Seller dashboard */}
+      {/* ── Seller dashboard ────────────────────────────────────────── */}
       {dashData?.role === 'seller' && (
         <div className="grid grid-cols-2 gap-4">
-          <StatCard label="Sales Today" value={formatTzs(dashData.sales_today)} sub={`${dashData.sales_count_today} transactions`} />
+          <StatCard label="Sales Today" value={fmtTzs(dashData.sales_today)} sub={`${dashData.sales_count_today} transactions`} />
           <StatCard
             label="Daily Reconciliation"
             value={dashData.reconciliation_pending ? 'Pending' : 'Submitted'}
@@ -79,7 +151,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* News feed */}
+      {/* ── News feed ───────────────────────────────────────────────── */}
       {news.length > 0 && (
         <div>
           <h2 className="mb-3 text-sm font-semibold text-gray-700">Announcements</h2>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreProductRequest;
 use App\Http\Requests\Api\V1\UpdateProductRequest;
 use App\Models\Product;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
@@ -58,7 +59,18 @@ class ProductController extends Controller
     public function destroy(Product $product): JsonResponse
     {
         $this->authorize('delete', $product);
-        $product->delete();
+
+        try {
+            $product->delete();
+        } catch (QueryException $e) {
+            // FK constraint — product has linked sales, purchases, or movements
+            if (str_contains($e->getMessage(), '23503')) {
+                return response()->json([
+                    'message' => 'Cannot delete this product because it has existing sales or purchase records.',
+                ], 422);
+            }
+            throw $e;
+        }
 
         return response()->json(['message' => 'Product deleted']);
     }

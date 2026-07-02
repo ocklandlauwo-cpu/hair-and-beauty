@@ -20,6 +20,9 @@ import AttendancePage from '@/pages/AttendancePage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import PnlPage from '@/pages/PnlPage'
 import NewsPage from '@/pages/NewsPage'
+import ClientsPage from '@/pages/ClientsPage'
+import CategoriesPage from '@/pages/CategoriesPage'
+import GraphicalViewPage from '@/pages/GraphicalViewPage'
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +38,7 @@ export const router = createBrowserRouter([
         children: [
           // All authenticated roles
           { index: true, element: <DashboardPage /> },
+          { path: 'clients', element: <ClientsPage /> },
           { path: 'products', element: <ProductsPage /> },
           { path: 'stock', element: <StockPage /> },
           { path: 'distributions', element: <DistributionsPage /> },
@@ -49,6 +53,8 @@ export const router = createBrowserRouter([
             element: <RoleRoute allow={['admin']} />,
             children: [
               { path: 'users', element: <UsersPage /> },
+              { path: 'categories', element: <CategoriesPage /> },
+              { path: 'graphical-view', element: <GraphicalViewPage /> },
               { path: 'products/new', element: <ProductFormPage /> },
               { path: 'products/:id/edit', element: <ProductFormPage /> },
             ],

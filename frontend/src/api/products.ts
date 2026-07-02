@@ -35,4 +35,6 @@ export const productsApi = {
     api.post<ApiResponse<Product>>('/products', data),
   update: (id: number, data: Partial<ProductPayload>) =>
     api.put<ApiResponse<Product>>(`/products/${id}`, data),
+  delete: (id: number) =>
+    api.delete(`/products/${id}`),
 }

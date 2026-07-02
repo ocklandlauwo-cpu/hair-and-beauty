@@ -29,23 +29,23 @@ export default function DataTable<T extends { id: number }>({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto rounded-2xl border border-warm-200 bg-white">
+      <table className="min-w-full divide-y divide-warm-100 text-sm">
+        <thead className="bg-warm-50">
           <tr>
             {columns.map(col => (
               <th
                 key={col.key}
-                className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 ${col.className ?? ''}`}
+                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 ${col.className ?? ''}`}
               >
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-warm-50">
           {data.map(row => (
-            <tr key={row.id} className="hover:bg-gray-50">
+            <tr key={row.id} className="hover:bg-warm-50/60 transition-colors">
               {columns.map(col => (
                 <td key={col.key} className={`px-4 py-3 text-gray-700 ${col.className ?? ''}`}>
                   {col.render ? col.render(row) : (row as Record<string, unknown>)[col.key] as React.ReactNode}

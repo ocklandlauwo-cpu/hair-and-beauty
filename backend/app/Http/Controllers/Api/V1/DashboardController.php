@@ -27,29 +27,110 @@ class DashboardController extends Controller
 
     private function adminData(): array
     {
-        $salesToday = DB::table('sales')->whereDate('sale_date', today())->where('is_reverted', false)->sum('total_amount');
-        $salesMonth = DB::table('sales')->whereYear('sale_date', now()->year)->whereMonth('sale_date', now()->month)->where('is_reverted', false)->sum('total_amount');
-        $expensesMonth = DB::table('expenses')->whereYear('expense_date', now()->year)->whereMonth('expense_date', now()->month)->sum('amount');
-        $pendingDist = DB::table('distributions')->where('status', 'pending')->count();
-        $expiryAlerts = DB::table('v_expiry_alerts')->count();
+        $year  = now()->year;
+        $month = now()->month;
+
+        // ── Totals ──────────────────────────────────────────────────────
+        $salesToday     = (float) DB::table('sales')->whereDate('sale_date', today())->where('is_reverted', false)->sum('total_amount');
+        $salesMonth     = (float) DB::table('sales')->whereYear('sale_date', $year)->whereMonth('sale_date', $month)->where('is_reverted', false)->sum('total_amount');
+        $expensesToday  = (float) DB::table('expenses')->whereDate('expense_date', today())->sum('amount');
+        $expensesMonth  = (float) DB::table('expenses')->whereYear('expense_date', $year)->whereMonth('expense_date', $month)->sum('amount');
+        $pendingDist    = DB::table('distributions')->where('status', 'pending')->count();
+        $expiryAlerts   = DB::table('v_expiry_alerts')->count();
         $lowStockAlerts = DB::table('v_low_stock_alerts')->count();
-        $activeUsers = DB::table('users')->where('is_active', true)->count();
+
+        // ── Per-shop breakdowns ─────────────────────────────────────────
+        $salesTodayByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(s.total_amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN sales s ON s.location_id = l.id
+                AND s.sale_date::date = CURRENT_DATE AND s.is_reverted = false
+            WHERE l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ");
+
+        $salesMonthByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(s.total_amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN sales s ON s.location_id = l.id
+                AND EXTRACT(YEAR FROM s.sale_date) = ? AND EXTRACT(MONTH FROM s.sale_date) = ?
+                AND s.is_reverted = false
+            WHERE l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ", [$year, $month]);
+
+        $expensesMonthByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(e.amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN expenses e ON e.location_id = l.id
+                AND EXTRACT(YEAR FROM e.expense_date) = ? AND EXTRACT(MONTH FROM e.expense_date) = ?
+            WHERE l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ", [$year, $month]);
+
+        // Expense maps for profit calculation
+        $expTodayMap  = collect(DB::select("
+            SELECT l.id AS location_id, COALESCE(SUM(e.amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN expenses e ON e.location_id = l.id AND e.expense_date::date = CURRENT_DATE
+            WHERE l.is_active = true GROUP BY l.id
+        "))->keyBy('location_id');
+
+        $expMonthMap = collect($expensesMonthByShop)->keyBy('location_id');
+
+        $fmt = fn (float $v) => number_format($v, 2, '.', '');
+
+        $fmtShop = fn ($row) => [
+            'location_id'   => $row->location_id,
+            'location_name' => $row->location_name,
+            'total'         => $fmt((float) $row->total),
+        ];
+
+        $profitTodayByShop = collect($salesTodayByShop)->map(function ($row) use ($expTodayMap, $fmt) {
+            $exp    = (float) ($expTodayMap->get($row->location_id)?->total ?? 0);
+            return [
+                'location_id'   => $row->location_id,
+                'location_name' => $row->location_name,
+                'total'         => $fmt((float) $row->total - $exp),
+            ];
+        })->values();
+
+        $profitMonthByShop = collect($salesMonthByShop)->map(function ($row) use ($expMonthMap, $fmt) {
+            $exp    = (float) ($expMonthMap->get($row->location_id)?->total ?? 0);
+            return [
+                'location_id'   => $row->location_id,
+                'location_name' => $row->location_name,
+                'total'         => $fmt((float) $row->total - $exp),
+            ];
+        })->values();
 
         return [
             'role' => 'admin',
             'sales' => [
-                'today' => number_format((float) $salesToday, 2, '.', ''),
-                'this_month' => number_format((float) $salesMonth, 2, '.', ''),
+                'today'              => $fmt($salesToday),
+                'today_by_shop'      => collect($salesTodayByShop)->map($fmtShop)->values(),
+                'this_month'         => $fmt($salesMonth),
+                'this_month_by_shop' => collect($salesMonthByShop)->map($fmtShop)->values(),
             ],
             'expenses' => [
-                'this_month' => number_format((float) $expensesMonth, 2, '.', ''),
+                'this_month'         => $fmt($expensesMonth),
+                'this_month_by_shop' => collect($expensesMonthByShop)->map($fmtShop)->values(),
+            ],
+            'profit' => [
+                'today'              => $fmt($salesToday - $expensesToday),
+                'today_by_shop'      => $profitTodayByShop,
+                'this_month'         => $fmt($salesMonth - $expensesMonth),
+                'this_month_by_shop' => $profitMonthByShop,
             ],
             'distributions' => ['pending' => (int) $pendingDist],
             'stock' => [
-                'expiry_alerts' => (int) $expiryAlerts,
+                'expiry_alerts'    => (int) $expiryAlerts,
                 'low_stock_alerts' => (int) $lowStockAlerts,
             ],
-            'users' => ['active' => (int) $activeUsers],
+            'users' => ['active' => (int) DB::table('users')->where('is_active', true)->count()],
         ];
     }
 

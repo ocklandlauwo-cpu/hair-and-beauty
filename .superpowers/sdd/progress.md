@@ -302,3 +302,11 @@ All 3 tasks complete. 114 Pest tests + 28 Vitest tests. TypeScript clean. Commit
 Note: 6 backend tests fail due to dirty test DB state (no RefreshDatabase trait; pre-existing since fd6cff7). Frontend: 28/28 Vitest tests pass. TypeScript clean.
 
 ## Phase 13: UX Polish + Cash Payment + Admin Cross-Location + Full Migration — COMPLETE ✓
+
+## Phase 13 Add-On: User Management Modal Form
+
+- Task 1: complete (commits 8fe6606..37921a7, re-review clean after fix pass)
+  - Fix commit 37921a7: discriminated union ModalProps, useMemo on schema+columns, useCallback on openEdit, 422 field error surfacing, location_id message fallback, role regex global
+  - Minor (log): modal lacks role=dialog/focus-trap/aria-modal — future WCAG pass
+  - Minor (log): Escape key not wired — future UX pass
+  - Minor (log): I-6 dismissed as plan-mandated — location optional (not prohibited) for admin/store_keeper per spec

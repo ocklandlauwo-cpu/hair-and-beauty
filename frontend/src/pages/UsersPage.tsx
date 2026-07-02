@@ -113,7 +113,7 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
@@ -255,10 +255,34 @@ const BASE_COLUMNS = [
 export default function UsersPage() {
   const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [pendingToggleId, setPendingToggleId] = useState<number | null>(null)
+
+  const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.list().then(r => r.data),
+  })
+
+  const { data: locationsList } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+  })
+
+  const locationMap = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const l of locationsList ?? []) m.set(l.id, l.name)
+    return m
+  }, [locationsList])
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
+      usersApi.update(id, { is_active }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setPendingToggleId(null)
+    },
+    onError: () => setPendingToggleId(null),
   })
 
   const openCreate = () => { setEditingUser(null); setModalMode('create') }
@@ -268,19 +292,37 @@ export default function UsersPage() {
   const columns = useMemo(() => [
     ...BASE_COLUMNS,
     {
+      key: 'location',
+      header: 'Location',
+      render: (u: User) => u.location_id ? (locationMap.get(u.location_id) ?? '—') : '—',
+    },
+    {
       key: 'actions',
       header: '',
       render: (u: User) => (
-        <button
-          onClick={() => openEdit(u)}
-          aria-label={`Edit ${u.name}`}
-          className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
-        >
-          <Pencil size={12} /> Edit
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => openEdit(u)}
+            aria-label={`Edit ${u.name}`}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+          >
+            <Pencil size={12} /> Edit
+          </button>
+          <button
+            onClick={() => {
+              setPendingToggleId(u.id)
+              toggleMutation.mutate({ id: u.id, is_active: !u.is_active })
+            }}
+            disabled={pendingToggleId === u.id}
+            aria-label={u.is_active ? `Deactivate ${u.name}` : `Activate ${u.name}`}
+            className={`text-xs hover:underline disabled:opacity-50 ${u.is_active ? 'text-red-500' : 'text-green-600'}`}
+          >
+            {pendingToggleId === u.id ? '…' : u.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+        </div>
       ),
     },
-  ], [openEdit])
+  ], [openEdit, locationMap, pendingToggleId, toggleMutation.mutate])
 
   return (
     <div className="space-y-4">

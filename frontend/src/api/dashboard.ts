@@ -1,9 +1,29 @@
 import api from '@/lib/axios'
 
+export interface ShopBreakdown {
+  location_id: number
+  location_name: string
+  total: string
+}
+
 export interface AdminDashboard {
   role: 'admin'
-  sales: { today: string; this_month: string }
-  expenses: { this_month: string }
+  sales: {
+    today: string
+    today_by_shop: ShopBreakdown[]
+    this_month: string
+    this_month_by_shop: ShopBreakdown[]
+  }
+  expenses: {
+    this_month: string
+    this_month_by_shop: ShopBreakdown[]
+  }
+  profit: {
+    today: string
+    today_by_shop: ShopBreakdown[]
+    this_month: string
+    this_month_by_shop: ShopBreakdown[]
+  }
   distributions: { pending: number }
   stock: { expiry_alerts: number; low_stock_alerts: number }
   users: { active: number }

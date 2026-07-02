@@ -40,7 +40,7 @@ export default function AppLayout() {
 
       {showWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle size={20} className="text-amber-500 shrink-0" />
               <h2 className="text-base font-semibold text-gray-900">Session Expiring Soon</h2>

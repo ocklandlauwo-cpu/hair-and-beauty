@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\ChartController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
@@ -41,6 +42,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         // Catalogue
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::apiResource('/products', ProductController::class);
         Route::get('/products/{product}/batches', [BatchController::class, 'index'])->name('products.batches.index');
         Route::post('/products/{product}/batches', [BatchController::class, 'store'])->name('products.batches.store');
@@ -49,15 +52,17 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
         Route::apiResource('/purchases', PurchaseController::class)->only(['index', 'show', 'store']);
         Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+        Route::get('/stock/movements', [StockController::class, 'movements'])->name('stock.movements');
         Route::get('/stock/alerts/expiry', [StockController::class, 'expiry'])->name('stock.expiry');
         Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
+        Route::post('/stock/adjust', [StockController::class, 'adjust'])->name('stock.adjust');
 
         // Distribution
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show', 'store']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
 
         // POS
-        Route::apiResource('/clients', ClientController::class)->only(['index', 'store']);
+        Route::apiResource('/clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('/sales', SaleController::class)->only(['index', 'show', 'store']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
 
@@ -80,6 +85,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
         Route::get('/reports/weekly', [ReportController::class, 'weekly'])->name('reports.weekly');
         Route::get('/reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
+
+        // Charts
+        Route::get('/charts/sales-by-location',  [ChartController::class, 'salesByLocation'])->name('charts.sales');
+        Route::get('/charts/profit-by-location', [ChartController::class, 'profitByLocation'])->name('charts.profit');
+        Route::get('/charts/purchases-by-month', [ChartController::class, 'purchasesByMonth'])->name('charts.purchases');
 
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
