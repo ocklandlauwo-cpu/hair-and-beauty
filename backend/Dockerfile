@@ -1,6 +1,9 @@
-FROM php:8.4-cli
+FROM php:8.4-apache
 
-# System dependencies for PHP extensions
+# Enable Apache rewrite and headers modules (required for Laravel routing)
+RUN a2enmod rewrite headers
+
+# System dependencies + gosu for privilege dropping in entrypoint
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libpng-dev \
@@ -11,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     git \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # PHP extensions required by Laravel + PostgreSQL
@@ -39,32 +43,27 @@ RUN { \
 # Composer 2
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Copy application
-COPY . .
+# Copy application files — owned by www-data from the start
+COPY --chown=www-data:www-data . .
 
-# Install production dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install production dependencies as www-data (not root)
+RUN gosu www-data composer install --no-dev --optimize-autoloader --no-interaction
 
-# Ensure required directories exist and are writable
+# Ensure Laravel's runtime directories exist with correct ownership
 RUN mkdir -p storage/framework/sessions \
               storage/framework/views \
               storage/framework/cache \
               storage/logs \
               bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# PHP built-in server workers (4 concurrent requests)
-ENV PHP_CLI_SERVER_WORKERS=4
+# Startup script (configures Apache port at runtime, then starts Apache)
+COPY docker-start.sh /usr/local/bin/docker-start.sh
+RUN chmod +x /usr/local/bin/docker-start.sh
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD sh -c "\
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    php artisan storage:link --quiet && \
-    php artisan db:bootstrap && \
-    php artisan migrate --force && \
-    php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
+ENTRYPOINT ["/usr/local/bin/docker-start.sh"]
