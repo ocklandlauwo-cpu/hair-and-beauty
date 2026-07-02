@@ -1,0 +1,16 @@
+.env
+.env.backup
+.env.local
+.env.*.local
+vendor/
+node_modules/
+.git/
+storage/logs/*.log
+tests/
+phpunit.xml
+.phpunit.xml.dist
+.phpunit.cache/
+.php-cs-fixer.php
+*.md
+.gitignore
+.gitattributes
