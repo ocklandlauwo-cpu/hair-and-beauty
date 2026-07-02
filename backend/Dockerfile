@@ -1,7 +1,8 @@
 FROM php:8.4-apache
 
-# Enable Apache rewrite and headers modules (required for Laravel routing)
-RUN a2enmod rewrite headers
+# mod_php requires mpm_prefork; disable event/worker to avoid "More than one MPM loaded"
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork rewrite headers
 
 # System dependencies + gosu for privilege dropping in entrypoint
 RUN apt-get update && apt-get install -y \
