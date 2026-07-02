@@ -25,7 +25,9 @@ gosu www-data php artisan route:cache
 gosu www-data php artisan view:cache
 gosu www-data php artisan storage:link --quiet
 gosu www-data php artisan db:bootstrap
-gosu www-data php artisan migrate --force
+gosu www-data php artisan migrate --force --database=pgsql_owner
+# Re-run bootstrap after migrate so the GRANT ON ALL TABLES covers newly created tables
+gosu www-data php artisan db:bootstrap
 
 # Start Apache — main process is root (standard for Apache; worker
 # processes run as www-data per Apache's User/Group directives)
