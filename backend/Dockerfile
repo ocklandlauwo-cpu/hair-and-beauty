@@ -1,10 +1,6 @@
-FROM php:8.4-apache
+FROM php:8.4-fpm
 
-# mod_php requires mpm_prefork; disable event/worker to avoid "More than one MPM loaded"
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
-    && a2enmod mpm_prefork rewrite headers
-
-# System dependencies + gosu for privilege dropping in entrypoint
+# System dependencies + nginx + gosu
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libpng-dev \
@@ -16,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     gosu \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # PHP extensions required by Laravel + PostgreSQL
@@ -61,7 +58,7 @@ RUN mkdir -p storage/framework/sessions \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Startup script (configures Apache port at runtime, then starts Apache)
+# Startup script
 COPY docker-start.sh /usr/local/bin/docker-start.sh
 RUN chmod +x /usr/local/bin/docker-start.sh
 
