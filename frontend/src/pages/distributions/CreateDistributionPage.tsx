@@ -18,7 +18,11 @@ export default function CreateDistributionPage() {
   const [error, setError] = useState<string | null>(null)
 
   const { data: locations } = useQuery({ queryKey: ['locations'], queryFn: () => locationsApi.list().then(r => r.data.data) })
-  const { data: products } = useQuery({ queryKey: ['products', 'all'], queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data) })
+  const { data: products } = useQuery({
+    queryKey: ['products', 'search', productSearch],
+    queryFn: () => productsApi.list({ search: productSearch, per_page: 50 }).then(r => r.data.data),
+    enabled: productSearch.length >= 1,
+  })
 
   const mutation = useMutation({
     mutationFn: distributionsApi.create,
@@ -34,9 +38,7 @@ export default function CreateDistributionPage() {
   })
 
   const shops = (locations ?? []).filter(l => l.type === 'shop' && l.is_active)
-  const filteredProducts = (products ?? []).filter(p =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) && !items.find(i => i.product_id === p.id)
-  )
+  const filteredProducts = (products ?? []).filter(p => !items.find(i => i.product_id === p.id))
 
   const addProduct = (product: { id: number; name: string }) => {
     setItems(prev => [...prev, { product_id: product.id, product_name: product.name, quantity_sent: 1 }])

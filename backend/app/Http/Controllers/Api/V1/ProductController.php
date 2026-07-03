@@ -8,17 +8,23 @@ use App\Http\Requests\Api\V1\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     private const FIELDS = ['id', 'category_id', 'name', 'sku', 'unit', 'wholesale_threshold',
         'wholesale_price', 'retail_price', 'latest_cost', 'image_path', 'is_active'];
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $products = Product::with('category')
-            ->orderBy('name')
-            ->paginate(50);
+        $query = Product::with('category')->orderBy('name');
+
+        if ($search = $request->query('search')) {
+            $query->where('name', 'ilike', "%{$search}%");
+        }
+
+        $perPage = min((int) ($request->query('per_page') ?? 50), 500);
+        $products = $query->paginate($perPage);
 
         return response()->json([
             'data' => $products->getCollection()->map(fn (Product $p) => array_merge(

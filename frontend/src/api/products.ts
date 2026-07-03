@@ -27,7 +27,7 @@ export interface ProductPayload {
 }
 
 export const productsApi = {
-  list: (params?: { page?: number; search?: string }) =>
+  list: (params?: { page?: number; search?: string; per_page?: number }) =>
     api.get<PaginatedResponse<Product>>('/products', { params }),
   show: (id: number) =>
     api.get<ApiResponse<Product>>(`/products/${id}`),

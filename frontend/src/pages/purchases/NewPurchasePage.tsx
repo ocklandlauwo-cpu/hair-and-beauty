@@ -22,7 +22,11 @@ export default function NewPurchasePage() {
   const [productSearch, setProductSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const { data: products } = useQuery({ queryKey: ['products', 'all'], queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data) })
+  const { data: products } = useQuery({
+    queryKey: ['products', 'search', productSearch],
+    queryFn: () => productsApi.list({ search: productSearch, per_page: 50 }).then(r => r.data.data),
+    enabled: productSearch.length >= 1,
+  })
 
   const mutation = useMutation({
     mutationFn: (data: CreatePurchasePayload) => purchasesApi.create(data),
@@ -37,9 +41,7 @@ export default function NewPurchasePage() {
     onError: () => setError('Failed to record purchase.'),
   })
 
-  const filtered = (products ?? []).filter(p =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) && !items.find(i => i.product.id === p.id)
-  )
+  const filtered = (products ?? []).filter(p => !items.find(i => i.product.id === p.id))
 
   const addProduct = (p: Product) => {
     setItems(prev => [...prev, { product: p, quantity: 1, unit_cost: Number(p.latest_cost), expiry_date: '', batch_number: '' }])
