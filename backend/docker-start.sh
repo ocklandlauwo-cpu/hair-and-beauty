@@ -31,10 +31,10 @@ NGINXCONF
 ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Run all Laravel artisan commands as www-data (non-root)
-gosu www-data php artisan config:cache
-gosu www-data php artisan route:cache
-gosu www-data php artisan view:cache
-gosu www-data php artisan storage:link --quiet
+gosu www-data php artisan config:cache --force
+gosu www-data php artisan route:cache --force
+gosu www-data php artisan view:cache --force
+gosu www-data php artisan storage:link --force --quiet
 gosu www-data php artisan db:bootstrap
 gosu www-data php artisan migrate --force --database=pgsql_owner
 # Re-run to grant access on all tables created by the migrations
