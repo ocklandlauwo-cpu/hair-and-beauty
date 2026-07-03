@@ -103,8 +103,8 @@ export default function NewSalePage() {
   const filtered = (products ?? []).filter(p => {
     if (!p.name.toLowerCase().includes(productSearch.toLowerCase())) return false
     if (items.find(i => i.product.id === p.id)) return false
-    // hide products with no stock at the selling location
-    if (stockAtLocation && (stockAtLocation.get(p.id) ?? 0) <= 0) return false
+    // hide products we know have zero or negative stock at the selling location
+    if (stockAtLocation && stockAtLocation.has(p.id) && (stockAtLocation.get(p.id)! <= 0)) return false
     return true
   })
 
