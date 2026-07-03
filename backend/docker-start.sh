@@ -37,9 +37,9 @@ echo "[nginx-t]:"
 nginx -t 2>&1 || { echo "[nginx-t FAILED] see error above"; exit 1; }
 
 # Run all Laravel artisan commands as www-data (non-root)
-gosu www-data php artisan config:cache --force
-gosu www-data php artisan route:cache --force
-gosu www-data php artisan view:cache --force
+gosu www-data php artisan config:cache
+gosu www-data php artisan route:cache
+gosu www-data php artisan view:cache
 gosu www-data php artisan storage:link --force --quiet
 gosu www-data php artisan db:bootstrap
 gosu www-data php artisan migrate --force --database=pgsql_owner
