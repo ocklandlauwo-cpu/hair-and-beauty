@@ -3,7 +3,11 @@
 return [
     'paths' => ['api/*'],
     'allowed_methods' => ['*'],
-    'allowed_origins' => array_filter([env('FRONTEND_URL'), 'http://localhost:5173']),
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL'),
+        'https://front-end-production-76cf.up.railway.app',
+        'http://localhost:5173',
+    ]),
     'allowed_origins_patterns' => array_filter([env('FRONTEND_URL_PATTERN')]),
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
