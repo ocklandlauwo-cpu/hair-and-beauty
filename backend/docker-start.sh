@@ -2,13 +2,18 @@
 set -e
 
 PORT=${PORT:-8080}
+echo "[start] PORT=${PORT} FRONTEND_URL=${FRONTEND_URL}"
 
-# Write nginx site config with the Railway-assigned port at runtime
-cat > /etc/nginx/sites-available/default << NGINXCONF
+# Write nginx config directly to conf.d (avoids sites-enabled symlink issues)
+rm -f /etc/nginx/sites-enabled/default
+cat > /etc/nginx/conf.d/app.conf << NGINXCONF
 server {
     listen ${PORT};
     root /var/www/html/public;
     index index.php index.html;
+
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
 
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
@@ -27,8 +32,8 @@ server {
 }
 NGINXCONF
 
-# Ensure the symlink to the enabled site is current
-ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+# Validate nginx config before doing anything else
+nginx -t
 
 # Run all Laravel artisan commands as www-data (non-root)
 gosu www-data php artisan config:cache --force
@@ -44,4 +49,5 @@ gosu www-data php artisan db:bootstrap
 php-fpm -D
 
 # Start nginx in foreground as PID 1
+echo "[start] launching nginx on port ${PORT}"
 exec nginx -g 'daemon off;'
