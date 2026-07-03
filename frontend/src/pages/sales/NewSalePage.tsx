@@ -216,18 +216,14 @@ export default function NewSalePage() {
                       />
                     </td>
                     <td className="px-4 py-2 text-right">
-                      {isAdmin ? (
-                        <input
-                          type="number"
-                          min={0}
-                          value={item.unitPrice}
-                          onChange={e => updatePrice(idx, Number(e.target.value))}
-                          aria-label={`Unit price for ${item.product.name}`}
-                          className="w-28 rounded border border-gray-300 h-8 px-2 text-right text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
-                        />
-                      ) : (
-                        <span className="text-gray-600">{item.unitPrice.toLocaleString('en-US')}</span>
-                      )}
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.unitPrice}
+                        onChange={e => updatePrice(idx, Number(e.target.value))}
+                        aria-label={`Unit price for ${item.product.name}`}
+                        className="w-28 rounded border border-gray-300 h-8 px-2 text-right text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                      />
                     </td>
                     <td className="px-4 py-2 text-right font-medium">{item.lineTotal.toLocaleString('en-US')}</td>
                     <td className="px-2">
