@@ -165,7 +165,7 @@ function AdjustModal({ row, onClose }: AdjustModalProps) {
     },
   })
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
     const n = Number(qty)
     if (!qty || isNaN(n) || n < 0) { setError('Enter a valid quantity (0 or more).'); return }
@@ -412,7 +412,7 @@ export default function StockPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {([
           ['current',   'Current Stock', Package],
           ['inventory', 'Inventory',     Warehouse],
@@ -422,7 +422,7 @@ export default function StockPage() {
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${tab === id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${tab === id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             <Icon size={14} />
             {label}

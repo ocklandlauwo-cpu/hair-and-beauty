@@ -103,7 +103,7 @@ export default function ExpensesPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="exp-category" className="block text-sm font-medium text-gray-700">Category</label>
               <select

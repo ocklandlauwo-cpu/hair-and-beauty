@@ -114,7 +114,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Simple count cards (3 col) */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard label="Pending Distributions" value={dashData.distributions.pending} />
             <StatCard label="Expiry Alerts" value={dashData.stock.expiry_alerts} sub="batches expiring in 60 days" />
             <StatCard label="Low Stock Alerts" value={dashData.stock.low_stock_alerts} sub="< 30 days cover" />
@@ -124,7 +124,7 @@ export default function DashboardPage() {
 
       {/* ── Store-keeper dashboard ──────────────────────────────────── */}
       {dashData?.role === 'store_keeper' && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <StatCard label="Pending Distributions" value={dashData.distributions.pending} />
           <StatCard label="Distributions This Week" value={dashData.distributions.this_week} />
           <StatCard label="Purchases This Month" value={dashData.purchases.this_month_count} />
@@ -135,7 +135,7 @@ export default function DashboardPage() {
 
       {/* ── Seller dashboard ────────────────────────────────────────── */}
       {dashData?.role === 'seller' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard label="Sales Today" value={fmtTzs(dashData.sales_today)} sub={`${dashData.sales_count_today} transactions`} />
           <StatCard
             label="Daily Reconciliation"

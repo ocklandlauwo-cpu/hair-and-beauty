@@ -109,7 +109,7 @@ export default function NewSalePage() {
   const addProduct = (p: Product) => { setItems(prev => [...prev, computeItem(p, 1)]); setProductSearch('') }
   const updateQty = (idx: number, qty: number) => setItems(prev => prev.map((i, j) => j === idx ? computeItem(i.product, qty) : i))
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (items.length === 0) { setError('Add at least one product.'); return }
     if (isAdmin && !locationId) { setError('Select a location for this sale.'); return }
@@ -176,8 +176,8 @@ export default function NewSalePage() {
 
         {/* Line items */}
         {items.length > 0 && (
-          <div className="mt-3 rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
                   <th className="px-4 py-2 text-left">Product</th>
@@ -245,7 +245,7 @@ export default function NewSalePage() {
       </div>
 
       {/* Payment + discount */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="sale-payment" className="block text-sm font-medium text-gray-700">Payment Method</label>
           <select id="sale-payment" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)}

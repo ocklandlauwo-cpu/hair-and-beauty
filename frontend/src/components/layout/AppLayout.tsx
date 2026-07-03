@@ -11,6 +11,7 @@ export default function AppLayout() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const [showWarning, setShowWarning] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const onWarn = useCallback(() => setShowWarning(true), [])
 
@@ -30,16 +31,16 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
 
       {showWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle size={20} className="text-amber-500 shrink-0" />

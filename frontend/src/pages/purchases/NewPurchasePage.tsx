@@ -53,7 +53,7 @@ export default function NewPurchasePage() {
     setItems(prev => prev.map((i, j) => j === idx ? { ...i, [field]: safeValue } : i))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (items.length === 0) { setError('Add at least one product.'); return }
     mutation.mutate({
@@ -74,7 +74,7 @@ export default function NewPurchasePage() {
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-xl font-semibold text-gray-900">Record Purchase</h1>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Supplier Name</label>
           <input value={supplierName} onChange={e => setSupplierName(e.target.value)}

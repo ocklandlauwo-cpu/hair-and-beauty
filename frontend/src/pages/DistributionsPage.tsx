@@ -98,8 +98,8 @@ export default function DistributionsPage() {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-gray-400 py-8 text-center">No distributions found.</p>
       ) : (
-        <div className="rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500">
               <tr>
                 <th className="w-8" />
