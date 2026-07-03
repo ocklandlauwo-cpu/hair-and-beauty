@@ -32,8 +32,9 @@ server {
 }
 NGINXCONF
 
-# Validate nginx config before doing anything else
-nginx -t
+# Print full nginx config test output so we can see any errors
+echo "[nginx-t]:"
+nginx -t 2>&1 || { echo "[nginx-t FAILED] see error above"; exit 1; }
 
 # Run all Laravel artisan commands as www-data (non-root)
 gosu www-data php artisan config:cache --force
@@ -50,4 +51,5 @@ php-fpm -D
 
 # Start nginx in foreground as PID 1
 echo "[start] launching nginx on port ${PORT}"
-exec nginx -g 'daemon off;'
+nginx -g 'daemon off;'
+echo "[nginx exited unexpectedly]"
