@@ -62,6 +62,6 @@ RUN mkdir -p storage/framework/sessions \
 COPY docker-start.sh /usr/local/bin/docker-start.sh
 RUN chmod +x /usr/local/bin/docker-start.sh
 
-EXPOSE 8080
+EXPOSE 8999
 
 ENTRYPOINT ["/usr/local/bin/docker-start.sh"]

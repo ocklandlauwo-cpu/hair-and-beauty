@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-PORT=${PORT:-8080}
+PORT=${PORT:-8999}
 echo "[start] PORT=${PORT} FRONTEND_URL=${FRONTEND_URL}"
 echo "[env] $(env | grep -E 'PORT|HOST|RAILWAY' | tr '\n' ' ')"
 
