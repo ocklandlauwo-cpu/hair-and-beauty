@@ -49,8 +49,9 @@ export default function NewSalePage() {
   const [error, setError] = useState<string | null>(null)
 
   const { data: products } = useQuery({
-    queryKey: ['products', 'all'],
-    queryFn: () => productsApi.list({ page: 1 }).then(r => r.data.data),
+    queryKey: ['products', 'search', productSearch],
+    queryFn: () => productsApi.list({ search: productSearch, per_page: 500 }).then(r => r.data.data),
+    enabled: productSearch.length >= 1,
   })
   // Effective location: admin picks one, seller uses their own
   const effectiveLocationId = isAdmin
