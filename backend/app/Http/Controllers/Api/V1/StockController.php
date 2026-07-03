@@ -75,6 +75,8 @@ class StockController extends Controller
             'location_id'   => $data['location_id'],
             'movement_type' => 'adjustment',
             'quantity'      => $delta,
+            'reference_type' => 'adjustment',
+            'reference_id'   => $request->user()->id,
             'performed_by'  => $request->user()->id,
             'notes'         => $data['notes'] ?? null,
         ]);
