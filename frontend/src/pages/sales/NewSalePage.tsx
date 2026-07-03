@@ -22,15 +22,16 @@ const PAYMENT_LABELS: Record<typeof PAYMENT_METHODS[number], string> = {
 interface LineItem {
   product: Product
   quantity: number
-  priceTier: 'wholesale' | 'retail'
+  priceTier: 'wholesale' | 'retail' | 'custom'
   unitPrice: number
   lineTotal: number
+  priceOverridden: boolean
 }
 
 function computeItem(product: Product, quantity: number): LineItem {
   const isWholesale = quantity >= product.wholesale_threshold
   const unitPrice = Number(isWholesale ? product.wholesale_price : product.retail_price)
-  return { product, quantity, priceTier: isWholesale ? 'wholesale' : 'retail', unitPrice, lineTotal: unitPrice * quantity }
+  return { product, quantity, priceTier: isWholesale ? 'wholesale' : 'retail', unitPrice, lineTotal: unitPrice * quantity, priceOverridden: false }
 }
 
 export default function NewSalePage() {
@@ -107,7 +108,16 @@ export default function NewSalePage() {
   })
 
   const addProduct = (p: Product) => { setItems(prev => [...prev, computeItem(p, 1)]); setProductSearch('') }
-  const updateQty = (idx: number, qty: number) => setItems(prev => prev.map((i, j) => j === idx ? computeItem(i.product, qty) : i))
+  const updateQty = (idx: number, qty: number) => setItems(prev => prev.map((i, j) => {
+    if (j !== idx) return i
+    if (i.priceOverridden) return { ...i, quantity: qty, lineTotal: i.unitPrice * qty }
+    return computeItem(i.product, qty)
+  }))
+  const updatePrice = (idx: number, price: number) => setItems(prev => prev.map((i, j) => {
+    if (j !== idx) return i
+    const safePrice = isNaN(price) || price < 0 ? i.unitPrice : price
+    return { ...i, unitPrice: safePrice, lineTotal: safePrice * i.quantity, priceTier: 'custom', priceOverridden: true }
+  }))
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
@@ -119,7 +129,7 @@ export default function NewSalePage() {
       location_id: isAdmin && locationId ? Number(locationId) : undefined,
       client_id: clientId || undefined,
       discount_amount: discount || undefined,
-      items: items.map(i => ({ product_id: i.product.id, quantity: i.quantity })),
+      items: items.map(i => ({ product_id: i.product.id, quantity: i.quantity, unit_price: i.priceOverridden ? i.unitPrice : undefined })),
     })
   }
 
@@ -204,7 +214,16 @@ export default function NewSalePage() {
                         className="w-16 rounded border border-gray-300 h-8 px-2 text-center text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
                       />
                     </td>
-                    <td className="px-4 py-2 text-right text-gray-600">{item.unitPrice.toLocaleString('en-US')}</td>
+                    <td className="px-4 py-2 text-right">
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.unitPrice}
+                        onChange={e => updatePrice(idx, Number(e.target.value))}
+                        aria-label={`Unit price for ${item.product.name}`}
+                        className="w-28 rounded border border-gray-300 h-8 px-2 text-right text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+                      />
+                    </td>
                     <td className="px-4 py-2 text-right font-medium">{item.lineTotal.toLocaleString('en-US')}</td>
                     <td className="px-2">
                       <button

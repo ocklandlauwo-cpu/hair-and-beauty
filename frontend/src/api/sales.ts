@@ -16,6 +16,7 @@ export interface Sale {
 export interface SaleItem {
   product_id: number
   quantity: number
+  unit_price?: number
   batch_id?: number
 }
 

@@ -50,7 +50,9 @@ class SaleController extends Controller
             foreach ($validated['items'] as $item) {
                 $product = Product::findOrFail($item['product_id']);
                 $priceTier = $product->priceTierFor($item['quantity']);
-                $unitPrice = $product->priceFor($item['quantity']);
+                $unitPrice = isset($item['unit_price']) && $item['unit_price'] !== null
+                    ? $item['unit_price']
+                    : $product->priceFor($item['quantity']);
                 $lineTotal = bcmul((string) $unitPrice, (string) $item['quantity'], 2);
                 $totalAmount = bcadd($totalAmount, $lineTotal, 2);
 
