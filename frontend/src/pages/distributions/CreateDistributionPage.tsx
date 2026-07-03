@@ -12,7 +12,7 @@ export default function CreateDistributionPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [toLocationId, setToLocationId] = useState('')
-  const [notes, setNotes] = useState('')
+  const [notes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [productSearch, setProductSearch] = useState('')
   const [error, setError] = useState<string | null>(null)

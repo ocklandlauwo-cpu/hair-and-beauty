@@ -8,8 +8,8 @@ export function useIdleTimer(
   timeoutMs = 30 * 60 * 1000,
   warnAt = 25 * 60 * 1000,
 ): { reset: () => void } {
-  const warnRef = useRef<ReturnType<typeof setTimeout>>()
-  const logoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const warnRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const logoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const reset = useCallback(() => {
     clearTimeout(warnRef.current)
