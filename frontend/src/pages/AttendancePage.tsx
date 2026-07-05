@@ -38,7 +38,11 @@ export default function AttendancePage() {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       setGeoError(null)
     },
-    onError: () => setGeoError('Failed to record attendance. Please try again.'),
+    onError: (err: unknown) => {
+      type ApiErr = { response?: { data?: { message?: string } } }
+      const msg = (err as ApiErr)?.response?.data?.message
+      setGeoError(msg ?? 'Failed to record attendance. Please try again.')
+    },
   })
 
   const requestGeolocation = (action: 'clock_in' | 'clock_out') => {

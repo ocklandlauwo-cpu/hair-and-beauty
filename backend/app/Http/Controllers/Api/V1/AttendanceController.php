@@ -53,6 +53,15 @@ class AttendanceController extends Controller
                 (float) $location->geofence_lng,
             );
             $isWithinGeofence = $distanceM <= $location->geofence_radius_m;
+
+            if (! $isWithinGeofence) {
+                $radiusKm = number_format($location->geofence_radius_m / 1000, 1);
+                $distKm   = number_format($distanceM / 1000, 2);
+                return response()->json([
+                    'message'    => "You are {$distKm} km from your shop. You must be within {$radiusKm} km to check in or out.",
+                    'distance_m' => round($distanceM, 1),
+                ], 422);
+            }
         }
 
         $attendance = Attendance::create([

@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useController } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod/v4'
-import { Pencil, Plus, X } from 'lucide-react'
+import { MapPin, Pencil, Plus, X } from 'lucide-react'
 import { usersApi } from '@/api/users'
-import { locationsApi } from '@/api/locations'
+import { locationsApi, type Location } from '@/api/locations'
 import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
 import type { User } from '@/types'
@@ -231,6 +231,131 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
   )
 }
 
+// ── Location Coordinates Modal ─────────────────────────────────────────────
+function LocationCoordinatesModal({ location, onClose }: { location: Location; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [lat, setLat] = useState(location.geofence_lat ?? '')
+  const [lng, setLng] = useState(location.geofence_lng ?? '')
+  const [radius, setRadius] = useState(String(location.geofence_radius_m || 2000))
+  const [gpsError, setGpsError] = useState<string | null>(null)
+  const [gpsLoading, setGpsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => locationsApi.updateGeofence(location.id, {
+      geofence_lat: Number(lat),
+      geofence_lng: Number(lng),
+      geofence_radius_m: Number(radius) || 2000,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['locations'] })
+      onClose()
+    },
+    onError: () => setError('Failed to save coordinates. Check the values and try again.'),
+  })
+
+  const useGps = () => {
+    setGpsError(null)
+    setGpsLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setLat(String(pos.coords.latitude))
+        setLng(String(pos.coords.longitude))
+        setGpsLoading(false)
+      },
+      () => { setGpsError('Could not get GPS location. Please allow location access.'); setGpsLoading(false) },
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }
+
+  const canSave = lat !== '' && lng !== '' && !isNaN(Number(lat)) && !isNaN(Number(lng))
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">
+            Shop Coordinates — {location.name}
+          </h2>
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600">
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-500">
+          Sellers assigned to this shop must be within <strong>{Number(radius) / 1000} km</strong> to check in or out.
+        </p>
+
+        <button
+          type="button"
+          onClick={useGps}
+          disabled={gpsLoading}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-primary-300 h-9 text-sm text-primary-700 hover:bg-primary-50 disabled:opacity-50"
+        >
+          <MapPin size={14} />
+          {gpsLoading ? 'Getting GPS…' : 'Use My Current Location'}
+        </button>
+        {gpsError && <p className="text-xs text-red-600">{gpsError}</p>}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Latitude</label>
+            <input
+              type="number"
+              step="any"
+              value={lat}
+              onChange={e => setLat(e.target.value)}
+              placeholder="-6.7924"
+              className="block w-full rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Longitude</label>
+            <input
+              type="number"
+              step="any"
+              value={lng}
+              onChange={e => setLng(e.target.value)}
+              placeholder="39.2083"
+              className="block w-full rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Radius (metres)</label>
+          <input
+            type="number"
+            min={100}
+            max={50000}
+            value={radius}
+            onChange={e => setRadius(e.target.value)}
+            className="block w-full rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+          />
+          <p className="mt-1 text-xs text-gray-400">Default 2000 m (2 km)</p>
+        </div>
+
+        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+        <div className="flex gap-3 pt-1">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-10 rounded-md border border-gray-200 text-sm hover:bg-gray-50">
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!canSave || mutation.isPending}
+            onClick={() => mutation.mutate()}
+            className="flex-1 h-10 rounded-md bg-primary-600 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+          >
+            {mutation.isPending ? 'Saving…' : 'Save Coordinates'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Table column definitions ───────────────────────────────────────────────
 const BASE_COLUMNS = [
   { key: 'name',  header: 'Name' },
@@ -256,6 +381,7 @@ export default function UsersPage() {
   const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pendingToggleId, setPendingToggleId] = useState<number | null>(null)
+  const [coordLocation, setCoordLocation] = useState<Location | null>(null)
 
   const qc = useQueryClient()
 
@@ -308,6 +434,18 @@ export default function UsersPage() {
           >
             <Pencil size={12} /> Edit
           </button>
+          {u.role === 'seller' && u.location_id && (
+            <button
+              onClick={() => {
+                const loc = (locationsList ?? []).find(l => l.id === u.location_id)
+                if (loc) setCoordLocation(loc)
+              }}
+              aria-label={`Set coordinates for ${u.name}'s shop`}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 hover:underline"
+            >
+              <MapPin size={12} /> Coordinates
+            </button>
+          )}
           <button
             onClick={() => {
               setPendingToggleId(u.id)
@@ -322,7 +460,7 @@ export default function UsersPage() {
         </div>
       ),
     },
-  ], [openEdit, locationMap, pendingToggleId, toggleMutation.mutate])
+  ], [openEdit, locationMap, locationsList, pendingToggleId, toggleMutation.mutate, setCoordLocation])
 
   return (
     <div className="space-y-4">
@@ -348,6 +486,9 @@ export default function UsersPage() {
       )}
       {modalMode === 'create' && (
         <UserFormModal mode="create" onClose={closeModal} />
+      )}
+      {coordLocation && (
+        <LocationCoordinatesModal location={coordLocation} onClose={() => setCoordLocation(null)} />
       )}
     </div>
   )
