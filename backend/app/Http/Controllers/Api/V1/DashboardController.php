@@ -39,6 +39,22 @@ class DashboardController extends Controller
         $expiryAlerts   = DB::table('v_expiry_alerts')->count();
         $lowStockAlerts = DB::table('v_low_stock_alerts')->count();
 
+        // ── Profit: sum((unit_price - unit_cost) × quantity) ────────────
+        $profitToday = (float) DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereDate('sales.sale_date', today())
+            ->where('sales.is_reverted', false)
+            ->selectRaw('COALESCE(SUM((sale_items.unit_price - sale_items.unit_cost) * sale_items.quantity), 0) as total')
+            ->value('total');
+
+        $profitMonth = (float) DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereYear('sales.sale_date', $year)
+            ->whereMonth('sales.sale_date', $month)
+            ->where('sales.is_reverted', false)
+            ->selectRaw('COALESCE(SUM((sale_items.unit_price - sale_items.unit_cost) * sale_items.quantity), 0) as total')
+            ->value('total');
+
         // ── Per-shop breakdowns ─────────────────────────────────────────
         $salesTodayByShop = DB::select("
             SELECT l.id AS location_id, l.name AS location_name,
@@ -71,15 +87,28 @@ class DashboardController extends Controller
             GROUP BY l.id, l.name ORDER BY l.name
         ", [$year, $month]);
 
-        // Expense maps for profit calculation
-        $expTodayMap  = collect(DB::select("
-            SELECT l.id AS location_id, COALESCE(SUM(e.amount), 0)::numeric AS total
+        $profitTodayByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM((si.unit_price - si.unit_cost) * si.quantity), 0)::numeric AS total
             FROM locations l
-            LEFT JOIN expenses e ON e.location_id = l.id AND e.expense_date::date = CURRENT_DATE
-            WHERE l.is_active = true GROUP BY l.id
-        "))->keyBy('location_id');
+            LEFT JOIN sales s ON s.location_id = l.id
+                AND s.sale_date::date = CURRENT_DATE AND s.is_reverted = false
+            LEFT JOIN sale_items si ON si.sale_id = s.id
+            WHERE l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ");
 
-        $expMonthMap = collect($expensesMonthByShop)->keyBy('location_id');
+        $profitMonthByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM((si.unit_price - si.unit_cost) * si.quantity), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN sales s ON s.location_id = l.id
+                AND EXTRACT(YEAR FROM s.sale_date) = ? AND EXTRACT(MONTH FROM s.sale_date) = ?
+                AND s.is_reverted = false
+            LEFT JOIN sale_items si ON si.sale_id = s.id
+            WHERE l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ", [$year, $month]);
 
         $fmt = fn (float $v) => number_format($v, 2, '.', '');
 
@@ -88,24 +117,6 @@ class DashboardController extends Controller
             'location_name' => $row->location_name,
             'total'         => $fmt((float) $row->total),
         ];
-
-        $profitTodayByShop = collect($salesTodayByShop)->map(function ($row) use ($expTodayMap, $fmt) {
-            $exp    = (float) ($expTodayMap->get($row->location_id)?->total ?? 0);
-            return [
-                'location_id'   => $row->location_id,
-                'location_name' => $row->location_name,
-                'total'         => $fmt((float) $row->total - $exp),
-            ];
-        })->values();
-
-        $profitMonthByShop = collect($salesMonthByShop)->map(function ($row) use ($expMonthMap, $fmt) {
-            $exp    = (float) ($expMonthMap->get($row->location_id)?->total ?? 0);
-            return [
-                'location_id'   => $row->location_id,
-                'location_name' => $row->location_name,
-                'total'         => $fmt((float) $row->total - $exp),
-            ];
-        })->values();
 
         return [
             'role' => 'admin',
@@ -120,10 +131,10 @@ class DashboardController extends Controller
                 'this_month_by_shop' => collect($expensesMonthByShop)->map($fmtShop)->values(),
             ],
             'profit' => [
-                'today'              => $fmt($salesToday - $expensesToday),
-                'today_by_shop'      => $profitTodayByShop,
-                'this_month'         => $fmt($salesMonth - $expensesMonth),
-                'this_month_by_shop' => $profitMonthByShop,
+                'today'              => $fmt($profitToday),
+                'today_by_shop'      => collect($profitTodayByShop)->map($fmtShop)->values(),
+                'this_month'         => $fmt($profitMonth),
+                'this_month_by_shop' => collect($profitMonthByShop)->map($fmtShop)->values(),
             ],
             'distributions' => ['pending' => (int) $pendingDist],
             'stock' => [
