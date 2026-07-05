@@ -20,6 +20,20 @@ export interface SaleItem {
   batch_id?: number
 }
 
+export interface SaleDetailItem {
+  id: number
+  product_id: number
+  product_name: string
+  batch_id: number | null
+  quantity: number
+  unit_price: string
+  price_tier: string
+}
+
+export interface SaleDetail extends Sale {
+  items: SaleDetailItem[]
+}
+
 export interface CreateSalePayload {
   payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
   sale_date: string
@@ -32,6 +46,8 @@ export interface CreateSalePayload {
 export const salesApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Sale>>('/sales', { params: { page } }),
+  show: (id: number) =>
+    api.get<{ data: SaleDetail }>(`/sales/${id}`),
   create: (data: CreateSalePayload) =>
     api.post<ApiResponse<Sale>>('/sales', data),
   revert: (id: number, reason: string) =>

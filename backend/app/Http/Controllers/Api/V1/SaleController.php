@@ -27,9 +27,19 @@ class SaleController extends Controller
     {
         $this->authorize('viewAny', Sale::class);
 
+        $sale->load('items.product');
+
         return response()->json(['data' => array_merge(
             $sale->only(self::FIELDS),
-            ['items' => $sale->items->map->only(['id', 'product_id', 'batch_id', 'quantity', 'unit_price', 'unit_cost', 'price_tier'])],
+            ['items' => $sale->items->map(fn ($item) => [
+                'id'           => $item->id,
+                'product_id'   => $item->product_id,
+                'product_name' => $item->product?->name ?? '—',
+                'batch_id'     => $item->batch_id,
+                'quantity'     => $item->quantity,
+                'unit_price'   => $item->unit_price,
+                'price_tier'   => $item->price_tier,
+            ])],
         )]);
     }
 
