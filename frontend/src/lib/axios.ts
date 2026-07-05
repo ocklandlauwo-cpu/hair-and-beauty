@@ -21,10 +21,17 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
-    if (axios.isAxiosError<ApiError>(error) && error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      window.location.href = '/login'
+    if (axios.isAxiosError<ApiError>(error)) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        window.location.href = '/login'
+      }
+      if (error.response?.status === 409) {
+        const msg = (error.response.data as { message?: string })?.message
+          ?? 'Duplicate submission — this record was already saved.'
+        return Promise.reject(new Error(msg))
+      }
     }
     return Promise.reject(error)
   },

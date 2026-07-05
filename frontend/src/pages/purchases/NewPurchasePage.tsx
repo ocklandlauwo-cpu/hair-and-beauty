@@ -38,7 +38,7 @@ export default function NewPurchasePage() {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       navigate('/purchases')
     },
-    onError: () => setError('Failed to record purchase.'),
+    onError: (err: unknown) => setError(err instanceof Error ? err.message : 'Failed to record purchase.'),
   })
 
   const filtered = (products ?? []).filter(p => !items.find(i => i.product.id === p.id))

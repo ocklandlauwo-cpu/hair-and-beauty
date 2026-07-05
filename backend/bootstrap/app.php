@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PreventDuplicateSubmission;
 use App\Http\Middleware\SetDbSessionContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend(HandleCors::class);
         $middleware->prependToGroup('api', SetDbSessionContext::class);
+        $middleware->alias(['no-dups' => PreventDuplicateSubmission::class]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(

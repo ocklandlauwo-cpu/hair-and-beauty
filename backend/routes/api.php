@@ -50,29 +50,38 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Purchasing & Inventory
         Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
-        Route::apiResource('/purchases', PurchaseController::class)->only(['index', 'show', 'store']);
+        Route::apiResource('/purchases', PurchaseController::class)->only(['index', 'show']);
         Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
         Route::get('/stock/movements', [StockController::class, 'movements'])->name('stock.movements');
         Route::get('/stock/alerts/expiry', [StockController::class, 'expiry'])->name('stock.expiry');
         Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
-        Route::post('/stock/adjust', [StockController::class, 'adjust'])->name('stock.adjust');
 
         // Distribution
-        Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show', 'store']);
+        Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
 
         // POS
         Route::apiResource('/clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
-        Route::apiResource('/sales', SaleController::class)->only(['index', 'show', 'store']);
+        Route::apiResource('/sales', SaleController::class)->only(['index', 'show']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
 
         // Reconciliation & User Management
-        Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index', 'store']);
+        Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index']);
         Route::post('/reconciliations/{reconciliation}/verify', VerifyReconciliationController::class)->name('reconciliations.verify');
         Route::apiResource('/users', UserController::class)->only(['index', 'store', 'update']);
 
         // Expenses
-        Route::apiResource('/expenses', ExpenseController::class)->only(['index', 'show', 'store']);
+        Route::apiResource('/expenses', ExpenseController::class)->only(['index', 'show']);
+
+        // Duplicate-protected create routes (10-second idempotency window)
+        Route::middleware('no-dups')->group(function () {
+            Route::post('/purchases', [PurchaseController::class, 'store'])->name('purchases.store');
+            Route::post('/stock/adjust', [StockController::class, 'adjust'])->name('stock.adjust');
+            Route::post('/distributions', [DistributionController::class, 'store'])->name('distributions.store');
+            Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
+            Route::post('/reconciliations', [ReconciliationController::class, 'store'])->name('reconciliations.store');
+            Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        });
 
         // News / Announcements
         Route::apiResource('/news', NewsController::class);

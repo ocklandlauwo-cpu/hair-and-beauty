@@ -34,7 +34,7 @@ export default function CreateDistributionPage() {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       navigate('/distributions')
     },
-    onError: () => setError('Failed to create distribution. Please try again.'),
+    onError: (err: unknown) => setError(err instanceof Error ? err.message : 'Failed to create distribution. Please try again.'),
   })
 
   const shops = (locations ?? []).filter(l => l.type === 'shop' && l.is_active)

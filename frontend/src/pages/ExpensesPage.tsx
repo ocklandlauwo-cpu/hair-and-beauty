@@ -49,7 +49,7 @@ export default function ExpensesPage() {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     },
-    onError: () => { setError('Failed to record expense.'); setSuccess(false) },
+    onError: (err: unknown) => { setError(err instanceof Error ? err.message : 'Failed to record expense.'); setSuccess(false) },
   })
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {

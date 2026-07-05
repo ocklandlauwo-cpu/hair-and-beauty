@@ -94,7 +94,7 @@ export default function NewSalePage() {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       navigate('/sales')
     },
-    onError: () => setError('Failed to record sale. Please try again.'),
+    onError: (err: unknown) => setError(err instanceof Error ? err.message : 'Failed to record sale. Please try again.'),
   })
 
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.lineTotal, 0), [items])
