@@ -4,6 +4,7 @@ import type { PaginatedResponse, ApiResponse } from '@/types'
 export interface AttendanceRecord {
   id: number
   user_id: number
+  user_name: string
   location_id: number
   action: 'clock_in' | 'clock_out'
   latitude: string

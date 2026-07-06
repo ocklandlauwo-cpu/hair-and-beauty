@@ -14,16 +14,18 @@ class AttendanceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $paged = Attendance::when(
-            $user->role === 'seller',
-            fn ($q) => $q->where('user_id', $user->id)
-        )
+        $paged = Attendance::with('user:id,name')
+            ->when(
+                $user->role === 'seller',
+                fn ($q) => $q->where('user_id', $user->id)
+            )
             ->latest('recorded_at')
             ->paginate(50)
-            ->through(fn ($a) => $a->only([
-                'id', 'user_id', 'location_id', 'action',
-                'latitude', 'longitude', 'is_within_geofence', 'recorded_at',
-            ]));
+            ->through(fn ($a) => array_merge(
+                $a->only(['id', 'user_id', 'location_id', 'action',
+                          'latitude', 'longitude', 'is_within_geofence', 'recorded_at']),
+                ['user_name' => $a->user?->name ?? '—'],
+            ));
 
         return response()->json([
             'data' => $paged->items(),

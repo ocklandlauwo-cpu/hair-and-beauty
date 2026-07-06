@@ -6,6 +6,7 @@ import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
 
 const columns = [
+  { key: 'user_name', header: 'Personnel', render: (r: AttendanceRecord) => r.user_name },
   { key: 'action', header: 'Action', render: (r: AttendanceRecord) => (
     <Badge variant={r.action === 'clock_in' ? 'success' : 'default'}>
       {r.action === 'clock_in' ? 'Clock In' : 'Clock Out'}
