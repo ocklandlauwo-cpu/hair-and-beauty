@@ -9,7 +9,7 @@ import { locationsApi } from '@/api/locations'
 import { stockApi } from '@/api/stock'
 import { useAuth } from '@/contexts/AuthContext'
 
-const PAYMENT_METHODS = ['nmb', 'airtel', 'vodacom', 'tigo', 'cash'] as const
+const PAYMENT_METHODS = ['cash', 'airtel', 'vodacom', 'tigo', 'nmb'] as const
 
 const PAYMENT_LABELS: Record<typeof PAYMENT_METHODS[number], string> = {
   nmb:     'NMB',
