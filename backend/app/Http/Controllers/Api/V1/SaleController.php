@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
@@ -15,12 +16,25 @@ class SaleController extends Controller
     private const FIELDS = ['id', 'location_id', 'sold_by', 'client_id', 'payment_method',
         'total_amount', 'discount_amount', 'is_reverted', 'sale_date'];
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Sale::class);
-        $sales = Sale::latest()->paginate(50);
 
-        return response()->json($sales->through(fn ($s) => $s->only(self::FIELDS)));
+        $dateFrom = $request->query('date_from', now()->startOfMonth()->toDateString());
+        $dateTo   = $request->query('date_to',   now()->toDateString());
+
+        $sales = Sale::with('location:id,name')
+            ->when($request->query('location_id'), fn ($q, $v) => $q->where('location_id', $v))
+            ->whereDate('sale_date', '>=', $dateFrom)
+            ->whereDate('sale_date', '<=', $dateTo)
+            ->latest('sale_date')
+            ->latest('id')
+            ->paginate(100);
+
+        return response()->json($sales->through(fn ($s) => array_merge(
+            $s->only(self::FIELDS),
+            ['location_name' => $s->location?->name ?? '—'],
+        )));
     }
 
     public function show(Sale $sale): JsonResponse

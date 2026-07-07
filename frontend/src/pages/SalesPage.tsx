@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { salesApi, type Sale, type SaleDetail } from '@/api/sales'
+import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
 import Badge from '@/components/ui/Badge'
+
+const today = new Date()
+const defaultDateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+const defaultDateTo   = today.toISOString().split('T')[0]
 
 function SaleItems({ id }: { id: number }) {
   const { data, isLoading } = useQuery({
@@ -56,10 +61,18 @@ export default function SalesPage() {
   const [revertId, setRevertId] = useState<number | null>(null)
   const [revertReason, setRevertReason] = useState('')
   const [revertError, setRevertError] = useState<string | null>(null)
+  const [locationId, setLocationId] = useState<number | ''>('')
+  const [dateFrom, setDateFrom] = useState(defaultDateFrom)
+  const [dateTo, setDateTo] = useState(defaultDateTo)
+
+  const { data: locationsData } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+  })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['sales'],
-    queryFn: () => salesApi.list().then(r => r.data),
+    queryKey: ['sales', locationId, dateFrom, dateTo],
+    queryFn: () => salesApi.list({ location_id: locationId || undefined, date_from: dateFrom, date_to: dateTo }).then(r => r.data),
   })
 
   const revertMutation = useMutation({
@@ -100,10 +113,48 @@ export default function SalesPage() {
         )}
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-end">
+        <div>
+          <label htmlFor="filter-shop" className="block text-xs font-medium text-gray-500 mb-1">Shop</label>
+          <select
+            id="filter-shop"
+            value={locationId}
+            onChange={e => setLocationId(e.target.value === '' ? '' : Number(e.target.value))}
+            className="rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+          >
+            <option value="">All shops</option>
+            {(locationsData ?? []).map(l => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="filter-from" className="block text-xs font-medium text-gray-500 mb-1">From</label>
+          <input
+            id="filter-from"
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+          />
+        </div>
+        <div>
+          <label htmlFor="filter-to" className="block text-xs font-medium text-gray-500 mb-1">To</label>
+          <input
+            id="filter-to"
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="rounded-md border border-gray-300 h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+          />
+        </div>
+      </div>
+
       {isLoading ? (
         <p className="text-sm text-gray-400 py-8 text-center">Loading…</p>
       ) : sales.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No sales yet.</p>
+        <p className="text-sm text-gray-400 py-8 text-center">No sales for this period.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full text-sm">
@@ -111,6 +162,7 @@ export default function SalesPage() {
               <tr>
                 <th className="w-8" />
                 <th className="px-4 py-3 text-left font-medium">#</th>
+                <th className="px-4 py-3 text-left font-medium">Shop</th>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Payment</th>
                 <th className="px-4 py-3 text-right font-medium">Total (TZS)</th>
@@ -132,6 +184,7 @@ export default function SalesPage() {
                         : <ChevronRight size={14} />}
                     </td>
                     <td className="px-4 py-3 text-gray-500">#{s.id}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.location_name}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {new Date(s.sale_date).toLocaleDateString()}
                     </td>
@@ -163,7 +216,7 @@ export default function SalesPage() {
 
                   {expandedId === s.id && (
                     <tr key={`${s.id}-items`} className="bg-gray-50/60">
-                      <td colSpan={isAdmin ? 7 : 6} className="border-t border-gray-100">
+                      <td colSpan={isAdmin ? 8 : 7} className="border-t border-gray-100">
                         <SaleItems id={s.id} />
                       </td>
                     </tr>

@@ -4,6 +4,7 @@ import type { PaginatedResponse, ApiResponse } from '@/types'
 export interface Sale {
   id: number
   location_id: number
+  location_name: string
   sold_by: number
   client_id: number | null
   payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
@@ -44,8 +45,8 @@ export interface CreateSalePayload {
 }
 
 export const salesApi = {
-  list: (page = 1) =>
-    api.get<PaginatedResponse<Sale>>('/sales', { params: { page } }),
+  list: (params?: { page?: number; location_id?: number | ''; date_from?: string; date_to?: string }) =>
+    api.get<PaginatedResponse<Sale>>('/sales', { params }),
   show: (id: number) =>
     api.get<{ data: SaleDetail }>(`/sales/${id}`),
   create: (data: CreateSalePayload) =>
