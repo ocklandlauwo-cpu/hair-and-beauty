@@ -173,8 +173,8 @@ export default function NewSalePage() {
             <p className="mt-1 text-xs text-gray-400">Select a location above to see available stock.</p>
           )}
           {productSearch && filtered.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-              {filtered.slice(0, 8).map(p => (
+            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+              {filtered.map(p => (
                 <button key={p.id} type="button" onClick={() => addProduct(p)}
                   className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-gray-50">
                   <span className="flex items-center gap-2"><Plus size={14} className="text-primary-600" />{p.name}</span>
