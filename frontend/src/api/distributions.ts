@@ -46,4 +46,6 @@ export const distributionsApi = {
     api.post<ApiResponse<Distribution>>('/distributions', data),
   confirm: (id: number, data: ConfirmDistributionPayload) =>
     api.post<ApiResponse<Distribution>>(`/distributions/${id}/confirm`, data),
+  revert: (id: number) =>
+    api.post<ApiResponse<Distribution>>(`/distributions/${id}/revert`),
 }

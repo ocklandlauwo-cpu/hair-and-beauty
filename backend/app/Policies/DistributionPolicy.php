@@ -23,4 +23,10 @@ class DistributionPolicy
             && $distribution->status === 'pending'
             && $distribution->to_location_id === $user->location_id;
     }
+
+    public function revert(User $user, Distribution $distribution): bool
+    {
+        return in_array($user->role, ['admin', 'store_keeper'])
+            && in_array($distribution->status, ['confirmed', 'discrepancy']);
+    }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Plus, Search } from 'lucide-react'
 import { distributionsApi, type Distribution, type DistributionDetail } from '@/api/distributions'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,15 +50,33 @@ function DistributionItems({ id }: { id: number }) {
 
 export default function DistributionsPage() {
   const { user } = useAuth()
+  const qc = useQueryClient()
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [shopSearch, setShopSearch] = useState('')
+  const [revertId, setRevertId] = useState<number | null>(null)
+  const [revertError, setRevertError] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['distributions'],
     queryFn: () => distributionsApi.list().then(r => r.data),
   })
 
+  const revertMutation = useMutation({
+    mutationFn: (id: number) => distributionsApi.revert(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['distributions'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      setRevertId(null)
+      setRevertError(null)
+    },
+    onError: () => setRevertError('Failed to revert distribution. Please try again.'),
+  })
+
+  const closeRevert = () => { setRevertId(null); setRevertError(null) }
+
   const distributions: Distribution[] = data?.data ?? []
+  const isAdminOrKeeper = user?.role === 'admin' || user?.role === 'store_keeper'
+  const isSeller = user?.role === 'seller'
 
   const filtered = useMemo(() => {
     const q = shopSearch.toLowerCase()
@@ -71,7 +89,7 @@ export default function DistributionsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Distributions</h1>
-        {(user?.role === 'admin' || user?.role === 'store_keeper') && (
+        {isAdminOrKeeper && (
           <Link
             to="/distributions/new"
             className="flex items-center gap-2 rounded-md bg-primary-600 px-4 h-10 text-sm font-medium text-white hover:bg-primary-700"
@@ -135,14 +153,23 @@ export default function DistributionsPage() {
                     <td className="px-4 py-3 text-gray-500">
                       {d.confirmed_at ? new Date(d.confirmed_at).toLocaleDateString() : '—'}
                     </td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      {d.status === 'pending' && (
+                    <td className="px-4 py-3 flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                      {isSeller && d.status === 'pending' && (
                         <Link
                           to={`/distributions/${d.id}/confirm`}
-                          className="text-primary-600 hover:underline text-xs"
+                          className="text-primary-600 hover:underline text-xs font-medium"
                         >
-                          Confirm
+                          Verify
                         </Link>
+                      )}
+                      {isAdminOrKeeper && (d.status === 'confirmed' || d.status === 'discrepancy') && (
+                        <button
+                          onClick={() => setRevertId(d.id)}
+                          className="text-xs text-amber-600 hover:underline"
+                          aria-label={`Revert distribution #${d.id}`}
+                        >
+                          Rectify
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -158,6 +185,41 @@ export default function DistributionsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Revert / Rectify confirmation modal */}
+      {revertId !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rectify distribution confirmation"
+        >
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg space-y-4">
+            <h2 className="text-sm font-semibold text-gray-900">Rectify Distribution #{revertId}</h2>
+            <p className="text-xs text-gray-500">
+              This will revert the distribution back to <strong>pending</strong> and reverse the stock recorded at the shop. The seller will be able to re-verify with the correct quantities.
+            </p>
+            {revertError && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{revertError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={closeRevert}
+                className="flex-1 rounded-md border border-gray-200 h-10 text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={revertMutation.isPending}
+                onClick={() => revertMutation.mutate(revertId!)}
+                className="flex-1 rounded-md bg-amber-600 h-10 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {revertMutation.isPending ? 'Reverting…' : 'Confirm Rectify'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
