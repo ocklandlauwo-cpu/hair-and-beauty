@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\CancelDistributionController;
 use App\Http\Controllers\Api\V1\ConfirmDistributionController;
 use App\Http\Controllers\Api\V1\RevertDistributionController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -62,6 +63,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
         Route::post('/distributions/{distribution}/revert', RevertDistributionController::class)->name('distributions.revert');
+        Route::post('/distributions/{distribution}/cancel', CancelDistributionController::class)->name('distributions.cancel');
 
         // POS
         Route::apiResource('/clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);

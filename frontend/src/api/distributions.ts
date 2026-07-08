@@ -8,7 +8,7 @@ export interface Distribution {
   to_location_name: string | null
   distributed_by: number
   confirmed_by: number | null
-  status: 'pending' | 'confirmed' | 'discrepancy'
+  status: 'pending' | 'confirmed' | 'discrepancy' | 'cancelled'
   distributed_at: string
   confirmed_at: string | null
   notes: string | null
@@ -48,4 +48,6 @@ export const distributionsApi = {
     api.post<ApiResponse<Distribution>>(`/distributions/${id}/confirm`, data),
   revert: (id: number) =>
     api.post<ApiResponse<Distribution>>(`/distributions/${id}/revert`),
+  cancel: (id: number) =>
+    api.post<ApiResponse<Distribution>>(`/distributions/${id}/cancel`),
 }

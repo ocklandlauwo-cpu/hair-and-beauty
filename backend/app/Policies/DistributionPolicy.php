@@ -29,4 +29,10 @@ class DistributionPolicy
         return in_array($user->role, ['admin', 'store_keeper'])
             && in_array($distribution->status, ['confirmed', 'discrepancy']);
     }
+
+    public function cancel(User $user, Distribution $distribution): bool
+    {
+        return in_array($user->role, ['admin', 'store_keeper'])
+            && $distribution->status === 'pending';
+    }
 }

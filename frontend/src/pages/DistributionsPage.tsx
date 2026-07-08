@@ -10,6 +10,7 @@ const statusVariant = {
   pending: 'warning',
   confirmed: 'success',
   discrepancy: 'danger',
+  cancelled: 'default',
 } as const
 
 function DistributionItems({ id }: { id: number }) {
@@ -55,6 +56,8 @@ export default function DistributionsPage() {
   const [shopSearch, setShopSearch] = useState('')
   const [revertId, setRevertId] = useState<number | null>(null)
   const [revertError, setRevertError] = useState<string | null>(null)
+  const [cancelId, setCancelId] = useState<number | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['distributions'],
@@ -72,7 +75,20 @@ export default function DistributionsPage() {
     onError: () => setRevertError('Failed to revert distribution. Please try again.'),
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => distributionsApi.cancel(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['distributions'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      setCancelId(null)
+      setCancelError(null)
+    },
+    onError: () => setCancelError('Failed to cancel distribution. Please try again.'),
+  })
+
   const closeRevert = () => { setRevertId(null); setRevertError(null) }
+  const closeCancel = () => { setCancelId(null); setCancelError(null) }
 
   const distributions: Distribution[] = data?.data ?? []
   const isAdminOrKeeper = user?.role === 'admin' || user?.role === 'store_keeper'
@@ -162,6 +178,15 @@ export default function DistributionsPage() {
                           Verify
                         </Link>
                       )}
+                      {isAdminOrKeeper && d.status === 'pending' && (
+                        <button
+                          onClick={() => setCancelId(d.id)}
+                          className="text-xs text-red-600 hover:underline"
+                          aria-label={`Cancel distribution #${d.id}`}
+                        >
+                          Cancel
+                        </button>
+                      )}
                       {isAdminOrKeeper && (d.status === 'confirmed' || d.status === 'discrepancy') && (
                         <button
                           onClick={() => setRevertId(d.id)}
@@ -185,6 +210,41 @@ export default function DistributionsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Cancel confirmation modal */}
+      {cancelId !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cancel distribution confirmation"
+        >
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg space-y-4">
+            <h2 className="text-sm font-semibold text-gray-900">Cancel Distribution #{cancelId}</h2>
+            <p className="text-xs text-gray-500">
+              This will cancel the distribution and restore the stock back to the store. This cannot be undone.
+            </p>
+            {cancelError && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{cancelError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={closeCancel}
+                className="flex-1 rounded-md border border-gray-200 h-10 text-sm hover:bg-gray-50"
+              >
+                Keep
+              </button>
+              <button
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate(cancelId!)}
+                className="flex-1 rounded-md bg-red-600 h-10 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {cancelMutation.isPending ? 'Cancelling…' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
