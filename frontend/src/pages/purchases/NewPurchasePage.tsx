@@ -24,7 +24,7 @@ export default function NewPurchasePage() {
 
   const { data: products } = useQuery({
     queryKey: ['products', 'search', productSearch],
-    queryFn: () => productsApi.list({ search: productSearch, per_page: 50 }).then(r => r.data.data),
+    queryFn: () => productsApi.list({ search: productSearch, per_page: 500 }).then(r => r.data.data),
     enabled: productSearch.length >= 1,
   })
 
@@ -93,8 +93,8 @@ export default function NewPurchasePage() {
           <input type="text" placeholder="Search products…" value={productSearch} onChange={e => setProductSearch(e.target.value)}
             className="block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
           {productSearch && filtered.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-              {filtered.slice(0, 8).map(p => (
+            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+              {filtered.map(p => (
                 <button key={p.id} type="button" onClick={() => addProduct(p)}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
                   <Plus size={14} className="text-primary-600" /> {p.name}
