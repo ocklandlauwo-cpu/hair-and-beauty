@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi, type ShopBreakdown } from '@/api/dashboard'
 import { newsApi } from '@/api/news'
-import { stockApi, type SlowStockAlert } from '@/api/stock'
 import { useAuth } from '@/contexts/AuthContext'
 import StatCard from '@/components/ui/StatCard'
 
@@ -49,67 +48,6 @@ function BreakdownCard({ label, total, shops, isCurrency = true, colorNegative =
   )
 }
 
-// ── Slow-moving stock widget (admin only) ─────────────────────────────────
-function SlowStockWidget({ items }: { items: SlowStockAlert[] }) {
-  if (items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-warm-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
-          Slow-Moving Products <span className="normal-case font-normal">(60+ days no sale)</span>
-        </p>
-        <p className="text-sm text-gray-400">All products moving well — no slow movers.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
-          Slow-Moving Products
-          <span className="ml-1 normal-case font-normal text-gray-400">(60+ days no sale)</span>
-        </p>
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-          {items.length} product{items.length !== 1 ? 's' : ''}
-        </span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-xs text-gray-400 border-b border-gray-100">
-              <th className="pb-2 text-left font-medium">Product</th>
-              <th className="pb-2 text-left font-medium">Category</th>
-              <th className="pb-2 text-right font-medium">Stock</th>
-              <th className="pb-2 text-right font-medium">Days Idle</th>
-              <th className="pb-2 text-right font-medium">Price (TZS)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {items.map(item => (
-              <tr key={item.product_id} className="hover:bg-gray-50">
-                <td className="py-2 pr-4 font-medium text-gray-800">{item.product_name}</td>
-                <td className="py-2 pr-4 text-gray-500 text-xs">{item.category_name ?? '—'}</td>
-                <td className="py-2 text-right text-gray-700">{item.total_stock}</td>
-                <td className="py-2 text-right">
-                  {item.days_since_last_sale === null
-                    ? <span className="text-red-500 font-semibold">Never sold</span>
-                    : <span className={item.days_since_last_sale >= 90 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}>
-                        {item.days_since_last_sale}d
-                      </span>
-                  }
-                </td>
-                <td className="py-2 text-right text-gray-700">
-                  {Number(item.retail_price).toLocaleString('en-US')}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -122,14 +60,6 @@ export default function DashboardPage() {
   const { data: newsData } = useQuery({
     queryKey: ['news'],
     queryFn: () => newsApi.list().then(r => r.data),
-  })
-
-  const isAdmin = user?.role === 'admin'
-
-  const { data: slowStockData } = useQuery({
-    queryKey: ['stock-slow'],
-    queryFn: () => stockApi.slowStockAlerts().then(r => r.data.data),
-    enabled: isAdmin,
   })
 
   if (dashLoading) {
@@ -190,8 +120,6 @@ export default function DashboardPage() {
             <StatCard label="Low Stock Alerts" value={dashData.stock.low_stock_alerts} sub="< 30 days cover" />
           </div>
 
-          {/* Slow-moving stock */}
-          <SlowStockWidget items={slowStockData ?? []} />
         </div>
       )}
 

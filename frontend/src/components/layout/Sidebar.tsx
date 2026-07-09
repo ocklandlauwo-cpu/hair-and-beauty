@@ -1,25 +1,58 @@
-import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText, Users, TrendingUp, ClipboardCheck, Clock, Receipt, UserRound, Tag, BarChart2 } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import {
+  LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText,
+  Users, TrendingUp, ClipboardCheck, Clock, Receipt, UserRound, Tag, BarChart2,
+  BrainCircuit, TrendingDown, ChevronDown,
+  type LucideIcon,
+} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/types'
 
-const allLinks = [
-  { to: '/',              label: 'Dashboard',     icon: LayoutDashboard, roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/products',      label: 'Products',      icon: Package,         roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/stock',         label: 'Stock',         icon: Boxes,           roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/purchases',     label: 'Purchases',     icon: CreditCard,      roles: ['admin', 'store_keeper'] as const },
-  { to: '/distributions', label: 'Distributions', icon: Truck,           roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/clients',       label: 'Clients',       icon: UserRound,       roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/sales',         label: 'Sales',         icon: ShoppingCart,    roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/reconciliations', label: 'Reconciliation', icon: ClipboardCheck, roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/attendance',    label: 'Attendance',    icon: Clock,           roles: ['admin', 'store_keeper', 'seller'] as const },
-  { to: '/news',          label: 'News',          icon: FileText,        roles: ['admin'] as const },
-  { to: '/expenses',      label: 'Expenses',      icon: Receipt,         roles: ['admin'] as const },
-  { to: '/categories',    label: 'Categories',    icon: Tag,             roles: ['admin'] as const },
-  { to: '/graphical-view', label: 'Graphical View', icon: BarChart2,     roles: ['admin'] as const },
-  { to: '/users',         label: 'Users',         icon: Users,           roles: ['admin'] as const },
-  { to: '/reports/pnl',   label: 'P&L Report',    icon: TrendingUp,      roles: ['admin', 'store_keeper'] as const },
+interface FlatLink {
+  kind: 'link'
+  to: string
+  label: string
+  icon: LucideIcon
+  roles: readonly Role[]
+}
+
+interface NavGroup {
+  kind: 'group'
+  label: string
+  icon: LucideIcon
+  roles: readonly Role[]
+  children: { to: string; label: string; icon: LucideIcon }[]
+}
+
+type NavEntry = FlatLink | NavGroup
+
+const allEntries: NavEntry[] = [
+  { kind: 'link', to: '/',               label: 'Dashboard',      icon: LayoutDashboard, roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/products',       label: 'Products',       icon: Package,         roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/stock',          label: 'Stock',          icon: Boxes,           roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/purchases',      label: 'Purchases',      icon: CreditCard,      roles: ['admin', 'store_keeper'] },
+  { kind: 'link', to: '/distributions',  label: 'Distributions',  icon: Truck,           roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/clients',        label: 'Clients',        icon: UserRound,       roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/sales',          label: 'Sales',          icon: ShoppingCart,    roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/reconciliations', label: 'Reconciliation', icon: ClipboardCheck, roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/attendance',     label: 'Attendance',     icon: Clock,           roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/news',           label: 'News',           icon: FileText,        roles: ['admin'] },
+  { kind: 'link', to: '/expenses',       label: 'Expenses',       icon: Receipt,         roles: ['admin'] },
+  { kind: 'link', to: '/categories',     label: 'Categories',     icon: Tag,             roles: ['admin'] },
+  { kind: 'link', to: '/graphical-view', label: 'Graphical View', icon: BarChart2,       roles: ['admin'] },
+  { kind: 'link', to: '/users',          label: 'Users',          icon: Users,           roles: ['admin'] },
+  { kind: 'link', to: '/reports/pnl',    label: 'P&L Report',     icon: TrendingUp,      roles: ['admin', 'store_keeper'] },
+  {
+    kind: 'group',
+    label: 'AI - Report',
+    icon: BrainCircuit,
+    roles: ['admin'],
+    children: [
+      { to: '/ai-reports/slow-products', label: 'Slow Products', icon: TrendingDown },
+    ],
+  },
 ]
 
 interface SidebarProps {
@@ -29,8 +62,29 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user } = useAuth()
+  const location = useLocation()
   const role: Role = user?.role ?? 'seller'
-  const links = allLinks.filter(l => (l.roles as readonly Role[]).includes(role))
+
+  const entries = allEntries.filter(e => (e.roles as readonly Role[]).includes(role))
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const initial = new Set<string>()
+    for (const e of allEntries) {
+      if (e.kind === 'group' && e.children.some(c => location.pathname.startsWith(c.to))) {
+        initial.add(e.label)
+      }
+    }
+    return initial
+  })
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
 
   return (
     <>
@@ -65,33 +119,94 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-0.5">
-          {links.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-xl px-3 h-9 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-500 hover:bg-warm-100 hover:text-gray-900',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    size={16}
-                    aria-hidden="true"
-                    className={isActive ? 'text-primary-600' : 'text-gray-400'}
+          {entries.map(entry => {
+            if (entry.kind === 'link') {
+              const Icon = entry.icon
+              return (
+                <NavLink
+                  key={entry.to}
+                  to={entry.to}
+                  end={entry.to === '/'}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 rounded-xl px-3 h-9 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-gray-500 hover:bg-warm-100 hover:text-gray-900',
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon size={16} aria-hidden="true" className={isActive ? 'text-primary-600' : 'text-gray-400'} />
+                      {entry.label}
+                    </>
+                  )}
+                </NavLink>
+              )
+            }
+
+            // Group entry
+            const GroupIcon = entry.icon
+            const isGroupActive = entry.children.some(c => location.pathname.startsWith(c.to))
+            const isGroupOpen = openGroups.has(entry.label) || isGroupActive
+
+            return (
+              <div key={entry.label}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(entry.label)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-xl px-3 h-9 text-sm font-medium transition-colors',
+                    isGroupActive
+                      ? 'text-primary-700'
+                      : 'text-gray-500 hover:bg-warm-100 hover:text-gray-900',
+                  )}
+                >
+                  <GroupIcon size={16} aria-hidden="true" className={isGroupActive ? 'text-primary-600' : 'text-gray-400'} />
+                  <span className="flex-1 text-left">{entry.label}</span>
+                  <ChevronDown
+                    size={14}
+                    className={cn(
+                      'text-gray-400 transition-transform duration-200',
+                      isGroupOpen && 'rotate-180',
+                    )}
                   />
-                  {label}
-                </>
-              )}
-            </NavLink>
-          ))}
+                </button>
+
+                {isGroupOpen && (
+                  <div className="ml-5 mt-0.5 space-y-0.5 border-l border-gray-100 pl-3">
+                    {entry.children.map(child => {
+                      const ChildIcon = child.icon
+                      return (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          onClick={onClose}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex items-center gap-2.5 rounded-lg px-3 h-8 text-sm font-medium transition-colors',
+                              isActive
+                                ? 'bg-primary-50 text-primary-700'
+                                : 'text-gray-500 hover:bg-warm-100 hover:text-gray-900',
+                            )
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <ChildIcon size={14} aria-hidden="true" className={isActive ? 'text-primary-600' : 'text-gray-400'} />
+                              {child.label}
+                            </>
+                          )}
+                        </NavLink>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         {/* User footer */}
