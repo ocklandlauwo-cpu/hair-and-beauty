@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useController } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod/v4'
-import { Pencil, Plus, X, Search, Trash2 } from 'lucide-react'
+import { Pencil, Plus, X, Search, Trash2, Bell } from 'lucide-react'
 import { clientsApi, type Client } from '@/api/clients'
 import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
@@ -197,13 +197,57 @@ function ClientFormModal({ mode, client, onClose, isAdmin }: ModalProps) {
   )
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+function whatsAppUrl(phone: string): string {
+  const d = phone.replace(/\D/g, '')
+  if (d.startsWith('255')) return `https://wa.me/${d}`
+  if (d.startsWith('0'))   return `https://wa.me/255${d.slice(1)}`
+  return `https://wa.me/${d}`
+}
+
+function OverdueBadge({ days }: { days: number | null }) {
+  if (days === null) return <span className="text-xs text-gray-400">Never purchased</span>
+  if (days < 7)      return null
+  const label = `${days}d ago`
+  if (days >= 15) return <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">{label}</span>
+  return <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">{label}</span>
+}
+
 // ── Table columns ──────────────────────────────────────────────────────────
 const BASE_COLUMNS = [
-  { key: 'name',  header: 'Name' },
-  { key: 'phone', header: 'Phone', render: (c: Client) => c.phone ?? '—' },
-  { key: 'notes', header: 'Notes', render: (c: Client) => c.notes
-    ? <span className="max-w-xs truncate block" title={c.notes}>{c.notes}</span>
-    : '—'
+  {
+    key: 'name',
+    header: 'Name',
+    render: (c: Client) => (
+      <span className="flex items-center gap-1 flex-wrap">
+        <span className="font-medium text-gray-900">{c.name}</span>
+        <OverdueBadge days={c.days_since_purchase} />
+      </span>
+    ),
+  },
+  {
+    key: 'phone',
+    header: 'Phone',
+    render: (c: Client) => c.phone
+      ? <a href={whatsAppUrl(c.phone)} target="_blank" rel="noreferrer"
+          className="text-primary-600 hover:underline" onClick={e => e.stopPropagation()}>
+          {c.phone}
+        </a>
+      : '—',
+  },
+  {
+    key: 'last_purchase',
+    header: 'Last Purchase',
+    render: (c: Client) => c.last_purchase_date
+      ? <span className="text-xs text-gray-600">{new Date(c.last_purchase_date).toLocaleDateString()}</span>
+      : <span className="text-xs text-gray-400">—</span>,
+  },
+  {
+    key: 'last_products',
+    header: 'Last Bought',
+    render: (c: Client) => c.last_products
+      ? <span className="text-xs text-gray-600 max-w-[180px] truncate block" title={c.last_products}>{c.last_products}</span>
+      : <span className="text-xs text-gray-400">—</span>,
   },
   { key: 'location_name', header: 'Shop', render: (c: Client) => c.location_name ?? '—' },
   {
@@ -225,6 +269,7 @@ export default function ClientsPage() {
 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [followUp, setFollowUp] = useState(false)
   const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [pendingToggleId, setPendingToggleId] = useState<number | null>(null)
@@ -233,8 +278,8 @@ export default function ClientsPage() {
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['clients', page, search],
-    queryFn: () => clientsApi.list(page, undefined, search || undefined).then(r => r.data),
+    queryKey: ['clients', page, search, followUp],
+    queryFn: () => clientsApi.list(page, undefined, search || undefined, followUp || undefined).then(r => r.data),
   })
 
   const toggleMutation = useMutation({
@@ -319,7 +364,7 @@ export default function ClientsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Clients</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -330,6 +375,16 @@ export default function ClientsPage() {
               className="pl-9 pr-3 h-9 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
             />
           </div>
+          <button
+            onClick={() => { setFollowUp(f => !f); setPage(1) }}
+            className={`flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-medium transition-colors ${
+              followUp
+                ? 'bg-amber-500 border-amber-500 text-white'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Bell size={14} /> Follow-Up Due
+          </button>
           {canWrite && (
             <button
               onClick={openCreate}

@@ -9,11 +9,19 @@ export interface Client {
   phone: string | null
   notes: string | null
   is_active: boolean
+  last_purchase_date: string | null
+  days_since_purchase: number | null
+  last_products: string | null
 }
 
 export const clientsApi = {
-  list: (page = 1, location_id?: number, search?: string) =>
-    api.get<PaginatedResponse<Client>>('/clients', { params: { page, ...(location_id ? { location_id } : {}), ...(search ? { search } : {}) } }),
+  list: (page = 1, location_id?: number, search?: string, follow_up?: boolean) =>
+    api.get<PaginatedResponse<Client>>('/clients', { params: {
+      page,
+      ...(location_id ? { location_id } : {}),
+      ...(search     ? { search }      : {}),
+      ...(follow_up  ? { follow_up: 1 } : {}),
+    }}),
   create: (data: { name: string; phone?: string | null; notes?: string | null; location_id?: number }) =>
     api.post<ApiResponse<Client>>('/clients', data),
   update: (id: number, data: Partial<{ name: string; phone: string | null; notes: string | null; is_active: boolean }>) =>
