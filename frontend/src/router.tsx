@@ -24,6 +24,7 @@ import ClientsPage from '@/pages/ClientsPage'
 import CategoriesPage from '@/pages/CategoriesPage'
 import GraphicalViewPage from '@/pages/GraphicalViewPage'
 import SlowProductsPage from '@/pages/ai-reports/SlowProductsPage'
+import TopClientsPage from '@/pages/ai-reports/TopClientsPage'
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
               { path: 'products/new', element: <ProductFormPage /> },
               { path: 'products/:id/edit', element: <ProductFormPage /> },
               { path: 'ai-reports/slow-products', element: <SlowProductsPage /> },
+              { path: 'ai-reports/top-clients',   element: <TopClientsPage /> },
             ],
           },
           // Admin + store_keeper

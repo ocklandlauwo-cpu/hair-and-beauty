@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText,
   Users, TrendingUp, ClipboardCheck, Clock, Receipt, UserRound, Tag, BarChart2,
-  BrainCircuit, TrendingDown, ChevronDown,
+  BrainCircuit, TrendingDown, ChevronDown, Trophy,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,7 +50,8 @@ const allEntries: NavEntry[] = [
     icon: BrainCircuit,
     roles: ['admin'],
     children: [
-      { to: '/ai-reports/slow-products', label: 'Slow Products', icon: TrendingDown },
+      { to: '/ai-reports/slow-products', label: 'Slow Products',       icon: TrendingDown },
+      { to: '/ai-reports/top-clients',   label: 'Top Client Spend', icon: Trophy },
     ],
   },
 ]

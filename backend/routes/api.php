@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\StockController;
+use App\Http\Controllers\Api\V1\TopClientsController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/stock/alerts/expiry', [StockController::class, 'expiry'])->name('stock.expiry');
         Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
         Route::get('/stock/alerts/slow', [StockController::class, 'slow'])->name('stock.slow');
+        Route::get('/ai-reports/top-clients', TopClientsController::class)->name('ai-reports.top-clients');
 
         // Distribution
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
