@@ -60,8 +60,8 @@ class ClientController extends Controller
         // follow_up=true → clients whose last purchase was ≥ 7 days ago (or never purchased)
         if ($request->boolean('follow_up')) {
             $query->whereRaw(
-                self::LAST_SALE_DATE_SQL . ' IS NULL OR ' .
-                self::LAST_SALE_DATE_SQL . " <= CURRENT_DATE - INTERVAL '7 days'"
+                '(' . self::LAST_SALE_DATE_SQL . ' IS NULL OR ' .
+                self::LAST_SALE_DATE_SQL . " <= CURRENT_DATE - INTERVAL '7 days')"
             );
         }
 
@@ -69,8 +69,9 @@ class ClientController extends Controller
         if ($request->filled('days_inactive')) {
             $days = (int) $request->input('days_inactive');
             $query->whereRaw(
-                self::LAST_SALE_DATE_SQL . ' IS NULL OR ' .
-                self::LAST_SALE_DATE_SQL . " <= CURRENT_DATE - INTERVAL '{$days} days'"
+                '(' . self::LAST_SALE_DATE_SQL . ' IS NULL OR ' .
+                self::LAST_SALE_DATE_SQL . ' <= CURRENT_DATE - make_interval(days => ?))',
+                [$days]
             );
         }
 
