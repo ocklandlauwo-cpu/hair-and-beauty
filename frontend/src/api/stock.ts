@@ -32,6 +32,15 @@ export interface LowStockAlert {
   days_of_cover: number | null
 }
 
+export interface SlowStockAlert {
+  product_id: number
+  product_name: string
+  category_name: string | null
+  retail_price: string
+  total_stock: number
+  days_since_last_sale: number | null
+}
+
 export type MovementType =
   | 'purchase'
   | 'distribution_in'
@@ -62,5 +71,6 @@ export const stockApi = {
     }),
   expiryAlerts: () => api.get<{ data: ExpiryAlert[] }>('/stock/alerts/expiry'),
   lowStockAlerts: () => api.get<{ data: LowStockAlert[] }>('/stock/alerts/low'),
+  slowStockAlerts: () => api.get<{ data: SlowStockAlert[] }>('/stock/alerts/slow'),
   adjust: (payload: AdjustPayload) => api.post<{ message: string; new_quantity: number }>('/stock/adjust', payload),
 }

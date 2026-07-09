@@ -48,6 +48,45 @@ class StockController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    public function slow(): JsonResponse
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+
+        $rows = DB::select("
+            WITH last_sale AS (
+                SELECT si.product_id, MAX(s.sale_date)::date AS last_sold
+                FROM sales s
+                JOIN sale_items si ON si.sale_id = s.id
+                WHERE s.is_reverted = false
+                GROUP BY si.product_id
+            ),
+            stock_totals AS (
+                SELECT product_id, SUM(current_stock)::integer AS total_stock
+                FROM v_current_stock
+                WHERE current_stock > 0
+                GROUP BY product_id
+            )
+            SELECT
+                p.id                                                   AS product_id,
+                p.name                                                 AS product_name,
+                cat.name                                               AS category_name,
+                p.retail_price,
+                COALESCE(st.total_stock, 0)                            AS total_stock,
+                CASE WHEN ls.last_sold IS NULL THEN NULL
+                     ELSE (CURRENT_DATE - ls.last_sold)::integer END   AS days_since_last_sale
+            FROM products p
+            LEFT JOIN categories cat ON cat.id = p.category_id
+            LEFT JOIN last_sale ls ON ls.product_id = p.id
+            LEFT JOIN stock_totals st ON st.product_id = p.id
+            WHERE p.is_active = true
+              AND COALESCE(st.total_stock, 0) > 0
+              AND (ls.last_sold IS NULL OR ls.last_sold <= CURRENT_DATE - INTERVAL '60 days')
+            ORDER BY days_since_last_sale DESC NULLS FIRST
+        ");
+
+        return response()->json(['data' => $rows]);
+    }
+
     public function adjust(Request $request): JsonResponse
     {
         abort_unless($request->user()?->role === 'admin', 403);

@@ -58,6 +58,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/stock/movements', [StockController::class, 'movements'])->name('stock.movements');
         Route::get('/stock/alerts/expiry', [StockController::class, 'expiry'])->name('stock.expiry');
         Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
+        Route::get('/stock/alerts/slow', [StockController::class, 'slow'])->name('stock.slow');
 
         // Distribution
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
