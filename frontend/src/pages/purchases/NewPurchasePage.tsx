@@ -110,14 +110,19 @@ export default function NewPurchasePage() {
               <div key={item.product.id} className="rounded-md border border-gray-200 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{item.product.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setItems(p => p.filter((_, j) => j !== idx))}
-                    className="text-gray-300 hover:text-red-500"
-                    aria-label={`Remove ${item.product.name}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500">
+                      Line total: <span className="font-medium text-gray-800">{(item.quantity * item.unit_cost).toLocaleString('en-US')} TZS</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setItems(p => p.filter((_, j) => j !== idx))}
+                      className="text-gray-300 hover:text-red-500"
+                      aria-label={`Remove ${item.product.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <div className={`grid gap-2 text-xs ${item.product.category_name === 'Hair' ? 'grid-cols-3' : 'grid-cols-4'}`}>
                   <div>
@@ -161,6 +166,13 @@ export default function NewPurchasePage() {
                 </div>
               </div>
             ))}
+
+            <div className="rounded-lg border border-gray-200 p-4 text-right">
+              <span className="text-sm text-gray-500">Total Cost: </span>
+              <span className="text-lg font-semibold text-gray-900">
+                {items.reduce((sum, i) => sum + i.quantity * i.unit_cost, 0).toLocaleString('en-US')} TZS
+              </span>
+            </div>
           </div>
         )}
       </div>
