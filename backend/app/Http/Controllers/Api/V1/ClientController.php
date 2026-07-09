@@ -38,13 +38,17 @@ class ClientController extends Controller
     {
         $this->authorize('viewAny', Client::class);
 
+        $user  = $request->user();
         $query = Client::with('location')
             ->addSelect('clients.*')
             ->addSelect(DB::raw(self::LAST_SALE_DATE_SQL . ' AS last_purchase_date'))
             ->addSelect(DB::raw(self::LAST_PRODUCTS_SQL . ' AS last_products'))
             ->orderBy('name');
 
-        if ($request->filled('location_id')) {
+        // Sellers are always scoped to their own location — no override possible
+        if ($user->role === 'seller') {
+            $query->where('location_id', $user->location_id);
+        } elseif ($request->filled('location_id')) {
             $query->where('location_id', $request->integer('location_id'));
         }
 
