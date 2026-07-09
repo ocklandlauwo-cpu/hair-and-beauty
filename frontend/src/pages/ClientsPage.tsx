@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useController } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod/v4'
-import { Pencil, Plus, X, Search, Trash2, Bell } from 'lucide-react'
+import { Pencil, Plus, X, Search, Trash2, Bell, Share2, Copy, Download, Check } from 'lucide-react'
 import { clientsApi, type Client } from '@/api/clients'
 import { locationsApi } from '@/api/locations'
+import { categoriesApi } from '@/api/categories'
 import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
@@ -197,6 +198,180 @@ function ClientFormModal({ mode, client, onClose, isAdmin }: ModalProps) {
   )
 }
 
+// ── Campaign Export Modal ──────────────────────────────────────────────────
+function CampaignExportModal({ onClose, isAdmin }: { onClose: () => void; isAdmin: boolean }) {
+  const [daysInactive, setDaysInactive] = useState<number | ''>('')
+  const [categoryId, setCategoryId]     = useState<number | ''>('')
+  const [locationId, setLocationId]     = useState<number | ''>('')
+  const [copied, setCopied]             = useState<'numbers' | 'list' | null>(null)
+
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoriesApi.list().then(r => r.data.data),
+  })
+  const { data: locations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+    enabled: isAdmin,
+  })
+
+  const { data, isFetching } = useQuery({
+    queryKey: ['clients-export', locationId, daysInactive, categoryId],
+    queryFn: () => clientsApi.list(
+      1,
+      locationId   || undefined,
+      undefined,
+      undefined,
+      daysInactive || undefined,
+      categoryId   || undefined,
+    ).then(r => r.data.data.filter(c => c.phone)),
+  })
+
+  const clients = data ?? []
+
+  const copy = (text: string, kind: 'numbers' | 'list') => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(kind)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+
+  const downloadCSV = () => {
+    const rows = [
+      ['Name', 'Phone', 'Shop', 'Last Purchase', 'Last Products'],
+      ...clients.map(c => [
+        c.name,
+        c.phone ?? '',
+        c.location_name ?? '',
+        c.last_purchase_date ?? '',
+        c.last_products ?? '',
+      ]),
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url
+    a.download = `whatsapp-campaign-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const numbersText = clients.map(c => c.phone).join('\n')
+  const listText    = clients.map(c => `${c.name}: ${c.phone}`).join('\n')
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">WhatsApp Campaign Export</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Filter clients, then copy or download</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-6 border-b border-gray-100 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Days without purchase</label>
+              <input
+                type="number"
+                min={1}
+                placeholder="e.g. 30"
+                value={daysInactive}
+                onChange={e => setDaysInactive(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full h-9 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Product category bought</label>
+              <select
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full h-9 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+              >
+                <option value="">All categories</option>
+                {(categories ?? []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+          {isAdmin && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Shop</label>
+              <select
+                value={locationId}
+                onChange={e => setLocationId(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full h-9 rounded-md border border-gray-300 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+              >
+                <option value="">All shops</option>
+                {(locations ?? []).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Preview */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-1 min-h-[120px]">
+          {isFetching ? (
+            <p className="text-sm text-gray-400 text-center py-6">Loading…</p>
+          ) : clients.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No clients with phone numbers match the filters.</p>
+          ) : (
+            clients.map(c => (
+              <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                <div>
+                  <span className="text-sm font-medium text-gray-800">{c.name}</span>
+                  {c.last_products && (
+                    <span className="ml-2 text-xs text-gray-400 truncate max-w-[180px] inline-block align-bottom" title={c.last_products}>
+                      {c.last_products}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm text-primary-600 font-medium ml-3 shrink-0">{c.phone}</span>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <div className="text-xs text-gray-500 mb-2">
+            {clients.length} client{clients.length !== 1 ? 's' : ''} with phone numbers
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              disabled={clients.length === 0}
+              onClick={() => copy(numbersText, 'numbers')}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-gray-200 text-sm hover:bg-gray-50 disabled:opacity-40"
+            >
+              {copied === 'numbers' ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+              {copied === 'numbers' ? 'Copied!' : 'Copy Numbers'}
+            </button>
+            <button
+              disabled={clients.length === 0}
+              onClick={() => copy(listText, 'list')}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-gray-200 text-sm hover:bg-gray-50 disabled:opacity-40"
+            >
+              {copied === 'list' ? <Check size={14} className="text-green-600" /> : <Share2 size={14} />}
+              {copied === 'list' ? 'Copied!' : 'Copy Name + Number'}
+            </button>
+            <button
+              disabled={clients.length === 0}
+              onClick={downloadCSV}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary-600 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-40"
+            >
+              <Download size={14} /> Download CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function whatsAppUrl(phone: string): string {
   const d = phone.replace(/\D/g, '')
@@ -270,6 +445,7 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [followUp, setFollowUp] = useState(false)
+  const [showCampaign, setShowCampaign] = useState(false)
   const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [pendingToggleId, setPendingToggleId] = useState<number | null>(null)
@@ -385,6 +561,12 @@ export default function ClientsPage() {
           >
             <Bell size={14} /> Follow-Up Due
           </button>
+          <button
+            onClick={() => setShowCampaign(true)}
+            className="flex items-center gap-2 h-9 px-3 rounded-md border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            <Share2 size={14} /> WhatsApp Campaign
+          </button>
           {canWrite && (
             <button
               onClick={openCreate}
@@ -430,6 +612,9 @@ export default function ClientsPage() {
       )}
       {modalMode === 'create' && (
         <ClientFormModal mode="create" onClose={closeModal} isAdmin={isAdmin} />
+      )}
+      {showCampaign && (
+        <CampaignExportModal onClose={() => setShowCampaign(false)} isAdmin={isAdmin} />
       )}
     </div>
   )

@@ -65,6 +65,28 @@ class ClientController extends Controller
             );
         }
 
+        // days_inactive=N → clients inactive for ≥ N days (or never purchased)
+        if ($request->filled('days_inactive')) {
+            $days = (int) $request->input('days_inactive');
+            $query->whereRaw(
+                self::LAST_SALE_DATE_SQL . ' IS NULL OR ' .
+                self::LAST_SALE_DATE_SQL . " <= CURRENT_DATE - INTERVAL '{$days} days'"
+            );
+        }
+
+        // category_id=N → clients who have ever bought a product from that category
+        if ($request->filled('category_id')) {
+            $catId = $request->integer('category_id');
+            $query->whereRaw("EXISTS (
+                SELECT 1 FROM sales s
+                JOIN sale_items si ON si.sale_id = s.id
+                JOIN products p ON p.id = si.product_id
+                WHERE s.client_id = clients.id
+                  AND s.is_reverted = false
+                  AND p.category_id = ?
+            )", [$catId]);
+        }
+
         $clients = $query->paginate(200);
 
         return response()->json([
