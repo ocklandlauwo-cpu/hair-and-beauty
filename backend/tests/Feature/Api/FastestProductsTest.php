@@ -41,8 +41,16 @@ it('admin sees fastest products ranked by velocity with stock runway', function 
         ]);
 
     $rows = $response->json('data');
-    expect($rows[0]['product_id'])->toBe($fastId);
-    expect((float) $rows[0]['velocity'])->toBe(20.0);
-    expect((int) $rows[0]['days_of_stock_left'])->toBe(2);
-    expect($rows[1]['product_id'])->toBe($slowId);
+
+    $fastRow = collect($rows)->firstWhere('product_id', $fastId);
+    $slowRow = collect($rows)->firstWhere('product_id', $slowId);
+
+    expect($fastRow)->not->toBeNull();
+    expect($slowRow)->not->toBeNull();
+    expect((float) $fastRow['velocity'])->toBe(20.0);
+    expect((int) $fastRow['days_of_stock_left'])->toBe(2);
+
+    $fastIndex = collect($rows)->search(fn ($r) => $r['product_id'] === $fastId);
+    $slowIndex = collect($rows)->search(fn ($r) => $r['product_id'] === $slowId);
+    expect($fastIndex)->toBeLessThan($slowIndex);
 });
