@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\RevertDistributionController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\ExpenseController;
+use App\Http\Controllers\Api\V1\FastestProductsController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\NewsController;
 use App\Http\Controllers\Api\V1\PnlController;
@@ -61,6 +62,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/stock/alerts/low', [StockController::class, 'low'])->name('stock.low');
         Route::get('/stock/alerts/slow', [StockController::class, 'slow'])->name('stock.slow');
         Route::get('/ai-reports/top-clients', TopClientsController::class)->name('ai-reports.top-clients');
+        Route::get('/ai-reports/fastest-products', FastestProductsController::class)->name('ai-reports.fastest-products');
 
         // Distribution
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
