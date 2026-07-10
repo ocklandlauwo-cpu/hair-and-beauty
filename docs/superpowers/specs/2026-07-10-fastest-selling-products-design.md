@@ -24,32 +24,33 @@ Query (raw `DB::select`, matching the existing raw-SQL report pattern):
 
 ```sql
 WITH sold AS (
-  SELECT si.product_id,
-         SUM(si.quantity)::integer                       AS units_sold,
-         SUM(si.quantity * si.unit_price)                 AS revenue,
-         MIN(s.sale_date)::date                           AS first_sale_in_period
-  FROM sales s
-  JOIN sale_items si ON si.sale_id = s.id
-  WHERE s.is_reverted = false {dateFilter}
-  GROUP BY si.product_id
+    SELECT
+        si.product_id,
+        SUM(si.quantity)::integer               AS units_sold,
+        SUM(si.quantity * si.unit_price)         AS revenue,
+        MIN(s.sale_date)::date                   AS first_sale_in_period
+    FROM sales s
+    JOIN sale_items si ON si.sale_id = s.id
+    WHERE s.is_reverted = false {dateFilter}
+    GROUP BY si.product_id
 ),
 stock_totals AS (
-  SELECT product_id, SUM(current_stock)::integer AS total_stock
-  FROM v_current_stock
-  GROUP BY product_id
+    SELECT product_id, SUM(current_stock)::integer AS total_stock
+    FROM v_current_stock
+    GROUP BY product_id
 )
 SELECT
-    p.id                                                              AS product_id,
-    p.name                                                            AS product_name,
-    cat.name                                                          AS category_name,
+    p.id                                                                      AS product_id,
+    p.name                                                                    AS product_name,
+    cat.name                                                                  AS category_name,
     so.units_sold,
     so.revenue,
-    ROUND(so.units_sold / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1), 2) AS velocity,
-    COALESCE(st.total_stock, 0)                                       AS current_stock,
+    ROUND(so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1), 2) AS velocity,
+    COALESCE(st.total_stock, 0)                                               AS current_stock,
     CASE
-        WHEN ROUND(so.units_sold / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1), 2) = 0 THEN NULL
-        ELSE FLOOR(COALESCE(st.total_stock, 0) / (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)))
-    END                                                                AS days_of_stock_left
+        WHEN so.units_sold = 0 OR (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)) = 0 THEN NULL
+        ELSE FLOOR(COALESCE(st.total_stock, 0) / (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)))::integer
+    END                                                                        AS days_of_stock_left
 FROM products p
 JOIN sold so ON so.product_id = p.id
 LEFT JOIN categories cat ON cat.id = p.category_id

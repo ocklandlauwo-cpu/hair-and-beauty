@@ -51,7 +51,7 @@ class FastestProductsController extends Controller
                 COALESCE(st.total_stock, 0)                                               AS current_stock,
                 CASE
                     WHEN so.units_sold = 0 OR (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)) = 0 THEN NULL
-                    ELSE FLOOR(COALESCE(st.total_stock, 0) / (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)))
+                    ELSE FLOOR(COALESCE(st.total_stock, 0) / (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)))::integer
                 END                                                                        AS days_of_stock_left
             FROM products p
             JOIN sold so ON so.product_id = p.id
