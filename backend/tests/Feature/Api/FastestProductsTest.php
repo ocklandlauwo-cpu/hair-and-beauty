@@ -32,6 +32,12 @@ it('admin sees fastest products ranked by velocity with stock runway', function 
     $slowSaleId = DB::table('sales')->insertGetId(['location_id' => $shopId, 'sold_by' => $admin->id, 'payment_method' => 'nmb', 'total_amount' => 4500, 'discount_amount' => 0, 'sale_date' => today(), 'created_at' => now(), 'updated_at' => now()]);
     DB::table('sale_items')->insert(['sale_id' => $slowSaleId, 'product_id' => $slowId, 'quantity' => 3, 'unit_price' => 1500, 'unit_cost' => 1000, 'price_tier' => 'retail', 'created_at' => now()]);
 
+    // Multi-day mover: 7 units sold across a 3-day-old first sale -> velocity 7/3 = 2.33/day (catches integer-division truncation)
+    $multiDayId = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'MultiDayMover', 'wholesale_price' => 1000, 'retail_price' => 1500, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('stock_movements')->insert(['product_id' => $multiDayId, 'location_id' => $shopId, 'movement_type' => 'purchase', 'quantity' => 50, 'reference_type' => 'test', 'reference_id' => 3, 'unit_cost' => 500, 'performed_by' => $admin->id, 'created_at' => now()]);
+    $multiDaySaleId = DB::table('sales')->insertGetId(['location_id' => $shopId, 'sold_by' => $admin->id, 'payment_method' => 'nmb', 'total_amount' => 10500, 'discount_amount' => 0, 'sale_date' => today()->subDays(2), 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('sale_items')->insert(['sale_id' => $multiDaySaleId, 'product_id' => $multiDayId, 'quantity' => 7, 'unit_price' => 1500, 'unit_cost' => 1000, 'price_tier' => 'retail', 'created_at' => now()]);
+
     Sanctum::actingAs($admin);
 
     $response = $this->getJson('/api/v1/ai-reports/fastest-products?period=30d')
@@ -53,4 +59,8 @@ it('admin sees fastest products ranked by velocity with stock runway', function 
     $fastIndex = collect($rows)->search(fn ($r) => $r['product_id'] === $fastId);
     $slowIndex = collect($rows)->search(fn ($r) => $r['product_id'] === $slowId);
     expect($fastIndex)->toBeLessThan($slowIndex);
+
+    $multiDayRow = collect($rows)->firstWhere('product_id', $multiDayId);
+    expect($multiDayRow)->not->toBeNull();
+    expect((float) $multiDayRow['velocity'])->toBe(2.33);
 });

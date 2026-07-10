@@ -47,7 +47,7 @@ class FastestProductsController extends Controller
                 cat.name                                                                  AS category_name,
                 so.units_sold,
                 so.revenue,
-                ROUND(so.units_sold / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1), 2) AS velocity,
+                ROUND(so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1), 2) AS velocity,
                 COALESCE(st.total_stock, 0)                                               AS current_stock,
                 CASE
                     WHEN so.units_sold = 0 OR (so.units_sold::numeric / GREATEST(CURRENT_DATE - so.first_sale_in_period + 1, 1)) = 0 THEN NULL
