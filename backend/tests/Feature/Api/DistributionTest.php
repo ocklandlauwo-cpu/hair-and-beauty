@@ -95,3 +95,59 @@ it('any authenticated role can list distributions', function () {
     Sanctum::actingAs(User::factory()->seller()->create());
     $this->getJson('/api/v1/distributions')->assertOk()->assertJsonStructure(['data']);
 });
+
+it('store_keeper can create a shop-to-shop distribution when source has sufficient stock', function () {
+    $f = distFixtures();
+    $shop2Id = DB::table('locations')->insertGetId(['name' => 'Shop2'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+    // Give the source shop (f['shopId']) stock to send onward
+    DB::table('stock_movements')->insert(['product_id' => $f['prodId'], 'location_id' => $f['shopId'], 'movement_type' => 'distribution_in', 'quantity' => 20, 'reference_type' => 'test', 'reference_id' => 1, 'unit_cost' => 80, 'performed_by' => $f['sk']->id, 'created_at' => now()]);
+
+    Sanctum::actingAs($f['sk']);
+
+    $response = $this->postJson('/api/v1/distributions', [
+        'from_location_id' => $f['shopId'],
+        'to_location_id'   => $shop2Id,
+        'distributed_at'   => now()->toIso8601String(),
+        'items' => [
+            ['product_id' => $f['prodId'], 'quantity_sent' => 5],
+        ],
+    ]);
+
+    $response->assertCreated()->assertJsonPath('data.status', 'pending');
+    expect($response->json('data.from_location_id'))->toBe($f['shopId']);
+
+    $outMovement = DB::table('stock_movements')
+        ->where('product_id', $f['prodId'])
+        ->where('movement_type', 'distribution_out')
+        ->where('location_id', $f['shopId'])
+        ->first();
+
+    expect($outMovement)->not->toBeNull();
+    expect((int) $outMovement->quantity)->toBe(-5);
+});
+
+it('shop-to-shop distribution rejects quantity exceeding source stock', function () {
+    $f = distFixtures();
+    $shop2Id = DB::table('locations')->insertGetId(['name' => 'Shop3'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+    // f['shopId'] has zero stock of this product — never received any
+    Sanctum::actingAs($f['sk']);
+
+    $this->postJson('/api/v1/distributions', [
+        'from_location_id' => $f['shopId'],
+        'to_location_id'   => $shop2Id,
+        'distributed_at'   => now()->toIso8601String(),
+        'items' => [
+            ['product_id' => $f['prodId'], 'quantity_sent' => 5],
+        ],
+    ])->assertStatus(422);
+
+    $outMovement = DB::table('stock_movements')
+        ->where('product_id', $f['prodId'])
+        ->where('movement_type', 'distribution_out')
+        ->where('location_id', $f['shopId'])
+        ->first();
+
+    expect($outMovement)->toBeNull();
+});

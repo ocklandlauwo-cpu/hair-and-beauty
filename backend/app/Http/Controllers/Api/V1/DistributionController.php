@@ -48,12 +48,27 @@ class DistributionController extends Controller
     public function store(StoreDistributionRequest $request): JsonResponse
     {
         $user = $request->user();
-        $store = Location::where('type', 'store')->firstOrFail();
         $validated = $request->validated();
 
-        $distribution = DB::transaction(function () use ($validated, $user, $store) {
+        $fromLocationId = $validated['from_location_id']
+            ?? Location::where('type', 'store')->firstOrFail()->id;
+
+        if (isset($validated['from_location_id'])) {
+            foreach ($validated['items'] as $item) {
+                $currentStock = (int) (DB::table('v_current_stock')
+                    ->where('product_id', $item['product_id'])
+                    ->where('location_id', $fromLocationId)
+                    ->value('current_stock') ?? 0);
+
+                if ($item['quantity_sent'] > $currentStock) {
+                    abort(422, "Insufficient stock for product #{$item['product_id']}: have {$currentStock}, requested {$item['quantity_sent']}.");
+                }
+            }
+        }
+
+        $distribution = DB::transaction(function () use ($validated, $user, $fromLocationId) {
             $distribution = Distribution::create([
-                'from_location_id' => $store->id,
+                'from_location_id' => $fromLocationId,
                 'to_location_id' => $validated['to_location_id'],
                 'distributed_by' => $user->id,
                 'status' => 'pending',
@@ -71,7 +86,7 @@ class DistributionController extends Controller
 
                 StockMovement::create([
                     'product_id' => $item['product_id'],
-                    'location_id' => $store->id,
+                    'location_id' => $fromLocationId,
                     'movement_type' => 'distribution_out',
                     'quantity' => -$item['quantity_sent'],
                     'reference_type' => 'distribution',
