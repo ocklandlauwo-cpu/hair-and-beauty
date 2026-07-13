@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ChevronDown, ChevronRight, Clock, Package, Pencil, Search, Warehouse, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeftRight, ChevronDown, ChevronRight, Clock, Package, Pencil, Search, Warehouse, X } from 'lucide-react'
 import { stockApi, type StockRow, type ExpiryAlert, type LowStockAlert, type MovementType } from '@/api/stock'
+import { distributionsApi } from '@/api/distributions'
+import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
@@ -67,9 +69,134 @@ function MovementsPanel({ productId, locationId }: { productId: number; location
   )
 }
 
+// ── Move Stock Modal (shop-to-shop transfer) ───────────────────────────────
+interface MoveStockModalProps {
+  row: StockRow
+  onClose: () => void
+}
+
+function MoveStockModal({ row, onClose }: MoveStockModalProps) {
+  const qc = useQueryClient()
+  const [toLocationId, setToLocationId] = useState('')
+  const [qty, setQty] = useState('1')
+  const [notes, setNotes] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: locations } = useQuery({ queryKey: ['locations'], queryFn: () => locationsApi.list().then(r => r.data.data) })
+  const destinationShops = (locations ?? []).filter(l => l.type === 'shop' && l.is_active && l.id !== row.location_id)
+
+  const mutation = useMutation({
+    mutationFn: () => distributionsApi.create({
+      from_location_id: row.location_id,
+      to_location_id: Number(toLocationId),
+      distributed_at: new Date().toISOString(),
+      notes: notes || undefined,
+      items: [{ product_id: row.product_id, quantity_sent: Number(qty) }],
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['stock-low'] })
+      qc.invalidateQueries({ queryKey: ['distributions'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      onClose()
+    },
+    onError: (err: unknown) => {
+      type ApiErr = { response?: { data?: { message?: string } } }
+      setError((err as ApiErr)?.response?.data?.message ?? 'Transfer failed.')
+    },
+  })
+
+  const handleSubmit = (e: React.SyntheticEvent) => {
+    e.preventDefault()
+    const n = Number(qty)
+    if (!toLocationId) { setError('Select a destination shop.'); return }
+    if (!qty || isNaN(n) || n < 1) { setError('Enter a valid quantity (1 or more).'); return }
+    if (n > row.current_stock) { setError(`Only ${row.current_stock} units available at ${row.location_name}.`); return }
+    setError(null)
+    mutation.mutate()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">Move Stock to Another Shop</h2>
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm space-y-1">
+          <p className="font-medium text-gray-800">{row.product_name}</p>
+          <p className="text-gray-500">From {row.location_name} &middot; Available: <span className="font-semibold text-gray-800">{row.current_stock}</span></p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label htmlFor="move-dest" className="block text-sm font-medium text-gray-700">
+              Destination Shop <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="move-dest"
+              value={toLocationId}
+              onChange={e => setToLocationId(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            >
+              <option value="">Select shop…</option>
+              {destinationShops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="move-qty" className="block text-sm font-medium text-gray-700">
+              Quantity <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="move-qty"
+              type="number"
+              min={1}
+              max={row.current_stock}
+              value={qty}
+              onChange={e => setQty(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label htmlFor="move-notes" className="block text-sm font-medium text-gray-700">
+              Notes <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="move-notes"
+              type="text"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="e.g. Shop 2 running low"
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            />
+          </div>
+
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 h-10 rounded-md border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={mutation.isPending}
+              className="flex-1 h-10 rounded-md bg-primary-600 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+              {mutation.isPending ? 'Moving…' : 'Move Stock'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Expandable current-stock table ─────────────────────────────────────────
-function CurrentStockTable({ rows, isLoading }: { rows: StockRow[]; isLoading: boolean }) {
+function CurrentStockTable({ rows, isLoading, canTransfer }: { rows: StockRow[]; isLoading: boolean; canTransfer: boolean }) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
+  const [movingRow, setMovingRow] = useState<StockRow | null>(null)
 
   if (isLoading) {
     return <div className="py-12 text-center text-sm text-gray-400">Loading…</div>
@@ -88,6 +215,7 @@ function CurrentStockTable({ rows, isLoading }: { rows: StockRow[]; isLoading: b
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Location</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Stock</th>
+            {canTransfer && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500" />}
           </tr>
         </thead>
         <tbody className="divide-y divide-warm-50">
@@ -117,10 +245,23 @@ function CurrentStockTable({ rows, isLoading }: { rows: StockRow[]; isLoading: b
                       {row.current_stock}
                     </span>
                   </td>
+                  {canTransfer && (
+                    <td className="px-4 py-3">
+                      {row.location_type === 'shop' && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setMovingRow(row) }}
+                          className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+                          aria-label={`Move ${row.product_name} from ${row.location_name} to another shop`}
+                        >
+                          <ArrowLeftRight size={12} /> Move
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
                 {isOpen && (
                   <tr key={`${key}-expansion`} className="bg-blue-50/40">
-                    <td colSpan={5} className="py-2">
+                    <td colSpan={canTransfer ? 6 : 5} className="py-2">
                       <MovementsPanel productId={row.product_id} locationId={row.location_id} />
                     </td>
                   </tr>
@@ -130,6 +271,10 @@ function CurrentStockTable({ rows, isLoading }: { rows: StockRow[]; isLoading: b
           })}
         </tbody>
       </table>
+
+      {movingRow && (
+        <MoveStockModal row={movingRow} onClose={() => setMovingRow(null)} />
+      )}
     </div>
   )
 }
@@ -335,6 +480,7 @@ const lowStockColumns = [
 export default function StockPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const canTransfer = user?.role === 'admin' || user?.role === 'store_keeper'
 
   const [tab, setTab] = useState<Tab>('current')
   const [productSearch, setProductSearch] = useState('')
@@ -431,7 +577,7 @@ export default function StockPage() {
       </div>
 
       {tab === 'current' && (
-        <CurrentStockTable rows={filteredCurrent} isLoading={l1} />
+        <CurrentStockTable rows={filteredCurrent} isLoading={l1} canTransfer={canTransfer} />
       )}
       {tab === 'inventory' && (
         <InventoryTable rows={filteredInventory} isLoading={l1} isAdmin={isAdmin} />
