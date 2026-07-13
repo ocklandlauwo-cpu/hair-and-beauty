@@ -27,6 +27,7 @@ export interface DistributionDetail extends Distribution {
 }
 
 export interface CreateDistributionPayload {
+  from_location_id?: number
   to_location_id: number
   distributed_at: string
   notes?: string
