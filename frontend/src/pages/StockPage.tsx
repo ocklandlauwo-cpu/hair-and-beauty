@@ -96,6 +96,7 @@ function MoveStockModal({ row, onClose }: MoveStockModalProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stock'] })
       qc.invalidateQueries({ queryKey: ['stock-low'] })
+      qc.invalidateQueries({ queryKey: ['stock-expiry'] })
       qc.invalidateQueries({ queryKey: ['distributions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
