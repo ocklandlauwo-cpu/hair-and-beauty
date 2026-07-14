@@ -24,6 +24,10 @@ export interface AdminDashboard {
     this_month: string
     this_month_by_shop: ShopBreakdown[]
   }
+  asset_value: {
+    total: string
+    by_shop: ShopBreakdown[]
+  }
   distributions: { pending: number }
   stock: { expiry_alerts: number; low_stock_alerts: number }
   users: { active: number }
