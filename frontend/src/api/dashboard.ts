@@ -28,6 +28,10 @@ export interface AdminDashboard {
     total: string
     by_shop: ShopBreakdown[]
   }
+  store_asset_value: {
+    total: string
+    by_location: ShopBreakdown[]
+  }
   distributions: { pending: number }
   stock: { expiry_alerts: number; low_stock_alerts: number }
   users: { active: number }

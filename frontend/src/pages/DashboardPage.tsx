@@ -116,6 +116,11 @@ export default function DashboardPage() {
               total={dashData.asset_value.total}
               shops={dashData.asset_value.by_shop}
             />
+            <BreakdownCard
+              label="Asset Value (Store)"
+              total={dashData.store_asset_value.total}
+              shops={dashData.store_asset_value.by_location}
+            />
           </div>
 
           {/* Simple count cards (3 col) */}
