@@ -119,3 +119,36 @@ it('admin dashboard shows shop asset value floored at zero for negative stock', 
     expect($shopRow)->not->toBeNull();
     expect((float) $shopRow['total'])->toBe(5000.0);
 });
+
+it('admin dashboard shows store asset value floored at zero for negative stock', function () {
+    $storeId = DB::table('locations')->insertGetId(['name' => 'SAVStore'.uniqid(), 'type' => 'store', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $shopId  = DB::table('locations')->insertGetId(['name' => 'SAVShop'.uniqid(),  'type' => 'shop',  'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $catId   = DB::table('categories')->insertGetId(['name' => 'SAVCat'.uniqid(), 'created_at' => now(), 'updated_at' => now()]);
+    $admin   = User::factory()->admin()->create();
+
+    // Product with a known recent buying price (latest_cost) of 400
+    $prodId = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'SAVProduct', 'wholesale_price' => 700, 'retail_price' => 900, 'latest_cost' => 400, 'created_at' => now(), 'updated_at' => now()]);
+
+    // Store has 20 units on hand -> expected contribution = 20 * 400 = 8000
+    DB::table('stock_movements')->insert(['product_id' => $prodId, 'location_id' => $storeId, 'movement_type' => 'purchase', 'quantity' => 20, 'reference_type' => 'test', 'reference_id' => 1, 'unit_cost' => 400, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    // Shop also holds stock of this product, but the shop is excluded from store asset value
+    DB::table('stock_movements')->insert(['product_id' => $prodId, 'location_id' => $shopId, 'movement_type' => 'distribution_in', 'quantity' => 50, 'reference_type' => 'test', 'reference_id' => 2, 'unit_cost' => 400, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    // Second product, oversold at the store (negative stock) -> must be floored to 0
+    $prod2Id = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'SAVNegProduct', 'wholesale_price' => 500, 'retail_price' => 650, 'latest_cost' => 250, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('stock_movements')->insert(['product_id' => $prod2Id, 'location_id' => $storeId, 'movement_type' => 'distribution_out', 'quantity' => -3, 'reference_type' => 'test', 'reference_id' => 3, 'unit_cost' => 250, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'admin')
+        ->assertJsonStructure(['data' => ['store_asset_value' => ['total', 'by_location' => [['location_id', 'location_name', 'total']]]]]);
+
+    $byLocation = collect($response->json('data.store_asset_value.by_location'));
+    $storeRow = $byLocation->firstWhere('location_id', $storeId);
+
+    expect($storeRow)->not->toBeNull();
+    expect((float) $storeRow['total'])->toBe(8000.0);
+});
