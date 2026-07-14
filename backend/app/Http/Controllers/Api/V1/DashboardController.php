@@ -110,6 +110,22 @@ class DashboardController extends Controller
             GROUP BY l.id, l.name ORDER BY l.name
         ", [$year, $month]);
 
+        $assetValue = (float) DB::table('v_current_stock as cs')
+            ->join('locations as l', 'l.id', '=', 'cs.location_id')
+            ->where('l.type', 'shop')
+            ->where('l.is_active', true)
+            ->selectRaw('COALESCE(SUM(GREATEST(cs.current_stock, 0) * cs.latest_cost), 0) as total')
+            ->value('total');
+
+        $assetValueByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(GREATEST(cs.current_stock, 0) * cs.latest_cost), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN v_current_stock cs ON cs.location_id = l.id
+            WHERE l.type = 'shop' AND l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ");
+
         $fmt = fn (float $v) => number_format($v, 2, '.', '');
 
         $fmtShop = fn ($row) => [
@@ -135,6 +151,10 @@ class DashboardController extends Controller
                 'today_by_shop'      => collect($profitTodayByShop)->map($fmtShop)->values(),
                 'this_month'         => $fmt($profitMonth),
                 'this_month_by_shop' => collect($profitMonthByShop)->map($fmtShop)->values(),
+            ],
+            'asset_value' => [
+                'total'   => $fmt($assetValue),
+                'by_shop' => collect($assetValueByShop)->map($fmtShop)->values(),
             ],
             'distributions' => ['pending' => (int) $pendingDist],
             'stock' => [

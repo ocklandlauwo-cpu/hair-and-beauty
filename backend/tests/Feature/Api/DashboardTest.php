@@ -86,3 +86,36 @@ it('dashboard returns today sales amount correctly', function () {
         DB::unprepared('RESET app.location_ids');
     }
 });
+
+it('admin dashboard shows shop asset value floored at zero for negative stock', function () {
+    $storeId = DB::table('locations')->insertGetId(['name' => 'AVStore'.uniqid(), 'type' => 'store', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $shopId  = DB::table('locations')->insertGetId(['name' => 'AVShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $catId   = DB::table('categories')->insertGetId(['name' => 'AVCat'.uniqid(), 'created_at' => now(), 'updated_at' => now()]);
+    $admin   = User::factory()->admin()->create();
+
+    // Product with a known recent buying price (latest_cost) of 500
+    $prodId = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'AVProduct', 'wholesale_price' => 800, 'retail_price' => 1000, 'latest_cost' => 500, 'created_at' => now(), 'updated_at' => now()]);
+
+    // Shop has 10 units on hand -> expected asset value contribution = 10 * 500 = 5000
+    DB::table('stock_movements')->insert(['product_id' => $prodId, 'location_id' => $shopId, 'movement_type' => 'distribution_in', 'quantity' => 10, 'reference_type' => 'test', 'reference_id' => 1, 'unit_cost' => 500, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    // Store also holds stock of this product, but the store is excluded from shop asset value
+    DB::table('stock_movements')->insert(['product_id' => $prodId, 'location_id' => $storeId, 'movement_type' => 'purchase', 'quantity' => 100, 'reference_type' => 'test', 'reference_id' => 2, 'unit_cost' => 500, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    // Second product, oversold at the shop (negative stock) -> must be floored to 0, not subtract from the shop's total
+    $prod2Id = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'AVNegProduct', 'wholesale_price' => 600, 'retail_price' => 800, 'latest_cost' => 300, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('stock_movements')->insert(['product_id' => $prod2Id, 'location_id' => $shopId, 'movement_type' => 'sale', 'quantity' => -5, 'reference_type' => 'test', 'reference_id' => 3, 'unit_cost' => 300, 'performed_by' => $admin->id, 'created_at' => now()]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'admin')
+        ->assertJsonStructure(['data' => ['asset_value' => ['total', 'by_shop' => [['location_id', 'location_name', 'total']]]]]);
+
+    $byShop = collect($response->json('data.asset_value.by_shop'));
+    $shopRow = $byShop->firstWhere('location_id', $shopId);
+
+    expect($shopRow)->not->toBeNull();
+    expect((float) $shopRow['total'])->toBe(5000.0);
+});
