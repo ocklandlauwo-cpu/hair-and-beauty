@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\AskedProduct;
 use App\Models\Client;
 use App\Models\Distribution;
 use App\Models\Expense;
@@ -11,6 +12,7 @@ use App\Models\Purchase;
 use App\Models\Reconciliation;
 use App\Models\Sale;
 use App\Models\User;
+use App\Policies\AskedProductPolicy;
 use App\Policies\ClientPolicy;
 use App\Policies\DistributionPolicy;
 use App\Policies\ExpensePolicy;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(AskedProduct::class, AskedProductPolicy::class);
         Gate::policy(Distribution::class, DistributionPolicy::class);
         Gate::policy(Expense::class, ExpensePolicy::class);
         Gate::policy(News::class, NewsPolicy::class);
