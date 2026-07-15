@@ -441,10 +441,12 @@ export default function ClientsPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const canWrite = user?.role === 'admin' || user?.role === 'seller'
+  const canFilterByShop = user?.role === 'admin' || user?.role === 'store_keeper'
 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [followUp, setFollowUp] = useState(false)
+  const [locationId, setLocationId] = useState('')
   const [showCampaign, setShowCampaign] = useState(false)
   const [modalMode, setModalMode]     = useState<'create' | 'edit' | null>(null)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
@@ -453,9 +455,15 @@ export default function ClientsPage() {
 
   const qc = useQueryClient()
 
+  const { data: locations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+    enabled: canFilterByShop,
+  })
+
   const { data, isLoading } = useQuery({
-    queryKey: ['clients', page, search, followUp],
-    queryFn: () => clientsApi.list(page, undefined, search || undefined, followUp || undefined).then(r => r.data),
+    queryKey: ['clients', page, search, followUp, locationId],
+    queryFn: () => clientsApi.list(page, locationId ? Number(locationId) : undefined, search || undefined, followUp || undefined).then(r => r.data),
   })
 
   const toggleMutation = useMutation({
@@ -551,6 +559,18 @@ export default function ClientsPage() {
               className="pl-9 pr-3 h-9 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
             />
           </div>
+          {canFilterByShop && (
+            <select
+              value={locationId}
+              onChange={e => { setLocationId(e.target.value); setPage(1) }}
+              className="h-9 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            >
+              <option value="">All Shops</option>
+              {(locations ?? []).filter(l => l.is_active).map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => { setFollowUp(f => !f); setPage(1) }}
             className={`flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-medium transition-colors ${
@@ -578,6 +598,12 @@ export default function ClientsPage() {
         </div>
       </div>
 
+      {data && (
+        <p className="text-sm text-gray-500">
+          {data.meta.total} client{data.meta.total !== 1 ? 's' : ''}
+        </p>
+      )}
+
       <DataTable
         columns={columns}
         data={data?.data ?? []}
@@ -587,7 +613,7 @@ export default function ClientsPage() {
 
       {data && data.meta.last_page > 1 && (
         <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Page {data.meta.current_page} of {data.meta.last_page} ({data.meta.total} total)</span>
+          <span>Page {data.meta.current_page} of {data.meta.last_page}</span>
           <div className="flex gap-2">
             <button
               disabled={page === 1}
