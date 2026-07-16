@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\AskedProductController;
 use App\Http\Controllers\Api\V1\ChartController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\V1\RevertDistributionController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DistributionController;
 use App\Http\Controllers\Api\V1\ExpenseController;
+use App\Http\Controllers\Api\V1\IncrementAskedProductController;
 use App\Http\Controllers\Api\V1\FastestProductsController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\NewsController;
@@ -51,6 +53,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/products', ProductController::class);
         Route::get('/products/{product}/batches', [BatchController::class, 'index'])->name('products.batches.index');
         Route::post('/products/{product}/batches', [BatchController::class, 'store'])->name('products.batches.store');
+
+        // Asked Products
+        Route::apiResource('/asked-products', AskedProductController::class)->only(['index', 'destroy']);
+        Route::post('/asked-products/{askedProduct}/increment', IncrementAskedProductController::class)->name('asked-products.increment');
 
         // Purchasing & Inventory
         Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
@@ -91,6 +97,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
             Route::post('/reconciliations', [ReconciliationController::class, 'store'])->name('reconciliations.store');
             Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+            Route::post('/asked-products', [AskedProductController::class, 'store'])->name('asked-products.store');
         });
 
         // News / Announcements
