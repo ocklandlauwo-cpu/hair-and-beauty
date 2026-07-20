@@ -51,7 +51,7 @@ class StockController extends Controller
 
         $productId  = $request->integer('product_id');
         $locationId = $request->integer('location_id');
-        $perPage    = min((int) ($request->query('per_page') ?? 50), 200);
+        $perPage    = max(min((int) ($request->query('per_page') ?? 50), 200), 1);
 
         $movements = StockMovement::where('product_id', $productId)
             ->where('location_id', $locationId)
