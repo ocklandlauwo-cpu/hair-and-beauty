@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle } from 'lucide-react'
 import { reconciliationsApi, type Reconciliation } from '@/api/reconciliations'
+import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
@@ -17,10 +18,17 @@ export default function ReconciliationPage() {
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [locationId, setLocationId] = useState('')
+
+  const { data: locations } = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => locationsApi.list().then(r => r.data.data),
+    enabled: isAdmin,
+  })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['reconciliations'],
-    queryFn: () => reconciliationsApi.list().then(r => r.data),
+    queryKey: ['reconciliations', locationId],
+    queryFn: () => reconciliationsApi.list(1, locationId ? Number(locationId) : undefined).then(r => r.data),
   })
 
   const alreadySubmittedToday = data?.data.some(r => r.reconciliation_date === today) ?? false
@@ -66,7 +74,16 @@ export default function ReconciliationPage() {
   }
 
   const columns = [
-    { key: 'reconciliation_date', header: 'Date' },
+    {
+      key: 'reconciliation_date',
+      header: 'Date',
+      render: (r: Reconciliation) => new Date(r.reconciliation_date).toLocaleDateString(),
+    },
+    {
+      key: 'location_name',
+      header: 'Shop',
+      render: (r: Reconciliation) => r.location_name ?? '—',
+    },
     {
       key: 'total_sold_amount',
       header: 'Total Sold (TZS)',
@@ -161,7 +178,21 @@ export default function ReconciliationPage() {
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Reconciliation History</h2>
+        <div className="mb-3 flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-sm font-semibold text-gray-700">Reconciliation History</h2>
+          {isAdmin && (
+            <select
+              value={locationId}
+              onChange={e => setLocationId(e.target.value)}
+              className="h-9 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            >
+              <option value="">All Shops</option>
+              {(locations ?? []).filter(l => l.is_active).map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
         <DataTable
           columns={columns}
           data={data?.data ?? []}

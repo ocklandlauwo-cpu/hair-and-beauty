@@ -27,6 +27,11 @@ class VerifyReconciliationController extends Controller
             'verified_at' => now(),
         ]);
 
-        return response()->json(['data' => $reconciliation->fresh()->only(self::FIELDS)]);
+        $fresh = $reconciliation->fresh();
+
+        return response()->json(['data' => array_merge(
+            $fresh->only(self::FIELDS),
+            ['reconciliation_date' => $fresh->reconciliation_date->format('Y-m-d')],
+        )]);
     }
 }

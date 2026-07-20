@@ -4,6 +4,7 @@ import type { PaginatedResponse, ApiResponse } from '@/types'
 export interface Reconciliation {
   id: number
   location_id: number
+  location_name: string | null
   seller_id: number
   reconciliation_date: string
   total_sold_amount: string
@@ -20,8 +21,11 @@ export interface CreateReconciliationPayload {
 }
 
 export const reconciliationsApi = {
-  list: (page = 1) =>
-    api.get<PaginatedResponse<Reconciliation>>('/reconciliations', { params: { page } }),
+  list: (page = 1, location_id?: number) =>
+    api.get<PaginatedResponse<Reconciliation>>('/reconciliations', { params: {
+      page,
+      ...(location_id ? { location_id } : {}),
+    }}),
   create: (data: CreateReconciliationPayload) =>
     api.post<ApiResponse<Reconciliation>>('/reconciliations', data),
   verify: (id: number) =>
