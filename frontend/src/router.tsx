@@ -6,6 +6,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ProductsPage from '@/pages/ProductsPage'
 import StockPage from '@/pages/StockPage'
+import StockMovementHistoryPage from '@/pages/stock/StockMovementHistoryPage'
 import DistributionsPage from '@/pages/DistributionsPage'
 import CreateDistributionPage from '@/pages/distributions/CreateDistributionPage'
 import ConfirmDistributionPage from '@/pages/distributions/ConfirmDistributionPage'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
           { path: 'clients', element: <ClientsPage /> },
           { path: 'products', element: <ProductsPage /> },
           { path: 'stock', element: <StockPage /> },
+          { path: 'stock/history/:productId/:locationId', element: <StockMovementHistoryPage /> },
           { path: 'distributions', element: <DistributionsPage /> },
           { path: 'distributions/:id/confirm', element: <ConfirmDistributionPage /> },
           { path: 'sales', element: <SalesPage /> },

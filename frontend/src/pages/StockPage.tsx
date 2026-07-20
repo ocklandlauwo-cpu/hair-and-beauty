@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeftRight, ChevronDown, ChevronRight, Clock, Package, Pencil, Search, Warehouse, X } from 'lucide-react'
-import { stockApi, type StockRow, type ExpiryAlert, type LowStockAlert, type MovementType } from '@/api/stock'
+import { stockApi, MOVEMENT_META, type StockRow, type ExpiryAlert, type LowStockAlert } from '@/api/stock'
 import { distributionsApi } from '@/api/distributions'
 import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
@@ -9,16 +10,6 @@ import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
 
 type Tab = 'current' | 'inventory' | 'expiry' | 'low'
-
-// ── Movement label + colour map ────────────────────────────────────────────
-const MOVEMENT_META: Record<MovementType, { label: string; increase: boolean | null }> = {
-  purchase:         { label: 'Purchase',         increase: true  },
-  distribution_in:  { label: 'Distribution In',  increase: true  },
-  sale_revert:      { label: 'Sale Revert',       increase: true  },
-  distribution_out: { label: 'Distribution Out',  increase: false },
-  sale:             { label: 'Sale',              increase: false },
-  adjustment:       { label: 'Adjustment',        increase: null  },
-}
 
 // ── Movements expansion panel (lazy-fetched per row) ──────────────────────
 function MovementsPanel({ productId, locationId }: { productId: number; locationId: number }) {
@@ -36,36 +27,46 @@ function MovementsPanel({ productId, locationId }: { productId: number; location
   }
 
   return (
-    <table className="w-full text-xs">
-      <thead>
-        <tr className="border-b border-gray-200 text-left text-gray-500">
-          <th className="px-6 py-2 font-medium">Date</th>
-          <th className="px-6 py-2 font-medium">Status</th>
-          <th className="px-6 py-2 font-medium">Qty</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map(m => {
-          const meta = MOVEMENT_META[m.movement_type]
-          const isIncrease = meta.increase === null ? m.quantity > 0 : meta.increase
-          return (
-            <tr key={m.id} className="border-b border-gray-100 last:border-0">
-              <td className="px-6 py-2 text-gray-500">
-                {new Date(m.created_at).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric',
-                })}
-              </td>
-              <td className="px-6 py-2">
-                <Badge variant={isIncrease ? 'success' : 'danger'}>{meta.label}</Badge>
-              </td>
-              <td className={`px-6 py-2 font-semibold ${isIncrease ? 'text-green-600' : 'text-red-500'}`}>
-                {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
+    <>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-gray-200 text-left text-gray-500">
+            <th className="px-6 py-2 font-medium">Date</th>
+            <th className="px-6 py-2 font-medium">Status</th>
+            <th className="px-6 py-2 font-medium">Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map(m => {
+            const meta = MOVEMENT_META[m.movement_type]
+            const isIncrease = meta.increase === null ? m.quantity > 0 : meta.increase
+            return (
+              <tr key={m.id} className="border-b border-gray-100 last:border-0">
+                <td className="px-6 py-2 text-gray-500">
+                  {new Date(m.created_at).toLocaleDateString('en-GB', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                  })}
+                </td>
+                <td className="px-6 py-2">
+                  <Badge variant={isIncrease ? 'success' : 'danger'}>{meta.label}</Badge>
+                </td>
+                <td className={`px-6 py-2 font-semibold ${isIncrease ? 'text-green-600' : 'text-red-500'}`}>
+                  {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <div className="px-6 py-2">
+        <Link
+          to={`/stock/history/${productId}/${locationId}`}
+          className="text-xs text-primary-600 hover:underline"
+        >
+          View Full History →
+        </Link>
+      </div>
+    </>
   )
 }
 
