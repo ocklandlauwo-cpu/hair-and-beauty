@@ -56,6 +56,20 @@ export interface StockMovement {
   created_at: string
 }
 
+export interface StockMovementHistoryMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+  product_name: string | null
+  location_name: string | null
+}
+
+export interface StockMovementHistoryResponse {
+  data: StockMovement[]
+  meta: StockMovementHistoryMeta
+}
+
 export interface AdjustPayload {
   product_id: number
   location_id: number
@@ -63,11 +77,26 @@ export interface AdjustPayload {
   notes?: string
 }
 
+// ── Movement label + colour map (shared by the Stock page's inline preview
+// and the full-history page) ────────────────────────────────────────────
+export const MOVEMENT_META: Record<MovementType, { label: string; increase: boolean | null }> = {
+  purchase:         { label: 'Purchase',         increase: true  },
+  distribution_in:  { label: 'Distribution In',  increase: true  },
+  sale_revert:      { label: 'Sale Revert',       increase: true  },
+  distribution_out: { label: 'Distribution Out',  increase: false },
+  sale:             { label: 'Sale',              increase: false },
+  adjustment:       { label: 'Adjustment',        increase: null  },
+}
+
 export const stockApi = {
   current: () => api.get<{ data: StockRow[] }>('/stock'),
   movements: (productId: number, locationId: number) =>
     api.get<{ data: StockMovement[] }>('/stock/movements', {
       params: { product_id: productId, location_id: locationId },
+    }),
+  movementsHistory: (productId: number, locationId: number, page = 1) =>
+    api.get<StockMovementHistoryResponse>('/stock/movements/history', {
+      params: { product_id: productId, location_id: locationId, page },
     }),
   expiryAlerts: () => api.get<{ data: ExpiryAlert[] }>('/stock/alerts/expiry'),
   lowStockAlerts: () => api.get<{ data: LowStockAlert[] }>('/stock/alerts/low'),
