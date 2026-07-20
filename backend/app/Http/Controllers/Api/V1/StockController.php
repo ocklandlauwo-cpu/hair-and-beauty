@@ -28,10 +28,47 @@ class StockController extends Controller
         $movements = StockMovement::where('product_id', $request->integer('product_id'))
             ->where('location_id', $request->integer('location_id'))
             ->orderByDesc('created_at')
-            ->limit(200)
+            ->limit(7)
             ->get(['id', 'movement_type', 'quantity', 'created_at']);
 
         return response()->json(['data' => $movements]);
+    }
+
+    public function movementsHistory(Request $request): JsonResponse
+    {
+        $request->validate([
+            'product_id'  => ['required', 'integer', 'exists:products,id'],
+            // NOTE: intentionally no exists:locations,id here (deviates from the task-1-brief.md
+            // transcription). `locations` RLS (loc_select) hides other shops' rows from sellers,
+            // so exists:locations,id 422s a seller's cross-shop query before the (correctly RLS-scoped)
+            // stock_movements query ever runs — contradicting the brief's own stated design ("Both
+            // endpoints rely on the same existing stock_movements RLS policies — no new authorization
+            // logic is being introduced"). Dropping this check restores that intent: authorization stays
+            // entirely in stock_movements_select RLS, and an out-of-scope location_id now correctly
+            // yields 200 + empty data instead of a leaking 422. See task-1-report.md for detail.
+            'location_id' => ['required', 'integer'],
+        ]);
+
+        $productId  = $request->integer('product_id');
+        $locationId = $request->integer('location_id');
+        $perPage    = min((int) ($request->query('per_page') ?? 50), 200);
+
+        $movements = StockMovement::where('product_id', $productId)
+            ->where('location_id', $locationId)
+            ->orderByDesc('created_at')
+            ->paginate($perPage, ['id', 'movement_type', 'quantity', 'created_at']);
+
+        return response()->json([
+            'data' => $movements->items(),
+            'meta' => [
+                'current_page'  => $movements->currentPage(),
+                'last_page'     => $movements->lastPage(),
+                'per_page'      => $movements->perPage(),
+                'total'         => $movements->total(),
+                'product_name'  => DB::table('products')->where('id', $productId)->value('name'),
+                'location_name' => DB::table('locations')->where('id', $locationId)->value('name'),
+            ],
+        ]);
     }
 
     public function expiry(): JsonResponse
