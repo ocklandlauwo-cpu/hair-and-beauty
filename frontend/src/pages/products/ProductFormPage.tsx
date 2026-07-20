@@ -60,7 +60,7 @@ export default function ProductFormPage() {
     const wholesale = Number(wholesalePrice)
     const retail = Number(retailPrice)
     if (isNaN(wholesale) || wholesale < 0) { setError('Enter a valid wholesale price.'); return }
-    if (isNaN(retail) || retail < wholesale) { setError('Retail price must be ≥ wholesale price.'); return }
+    if (isNaN(retail) || retail < 0) { setError('Enter a valid retail price.'); return }
     setError(null)
     mutation.mutate({
       category_id: Number(categoryId),
