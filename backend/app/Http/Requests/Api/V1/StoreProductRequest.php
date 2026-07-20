@@ -20,7 +20,7 @@ class StoreProductRequest extends FormRequest
             'unit' => ['nullable', 'string', 'max:20'],
             'wholesale_threshold' => ['nullable', 'integer', 'min:1'],
             'wholesale_price' => ['required', 'numeric', 'min:0'],
-            'retail_price' => ['required', 'numeric', 'min:0', 'gte:wholesale_price'],
+            'retail_price' => ['required', 'numeric', 'min:0'],
             'image_path' => ['nullable', 'string', 'max:255'],
             'is_active' => ['nullable', 'boolean'],
         ];
