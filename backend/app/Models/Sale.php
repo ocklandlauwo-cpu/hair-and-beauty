@@ -35,4 +35,9 @@ class Sale extends Model
     {
         return $this->belongsTo(Location::class);
     }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
 }

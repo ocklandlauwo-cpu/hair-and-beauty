@@ -7,6 +7,7 @@ export interface Sale {
   location_name: string
   sold_by: number
   client_id: number | null
+  client_name: string | null
   payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
   total_amount: string
   discount_amount: string

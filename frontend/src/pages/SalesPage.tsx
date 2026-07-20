@@ -163,6 +163,7 @@ export default function SalesPage() {
                 <th className="w-8" />
                 <th className="px-4 py-3 text-left font-medium">#</th>
                 <th className="px-4 py-3 text-left font-medium">Shop</th>
+                <th className="px-4 py-3 text-left font-medium">Client</th>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Payment</th>
                 <th className="px-4 py-3 text-right font-medium">Total (TZS)</th>
@@ -185,6 +186,7 @@ export default function SalesPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">#{s.id}</td>
                     <td className="px-4 py-3 text-gray-600">{s.location_name}</td>
+                    <td className="px-4 py-3 text-gray-600">{s.client_name ?? 'N/A'}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {new Date(s.sale_date).toLocaleDateString()}
                     </td>
@@ -216,7 +218,7 @@ export default function SalesPage() {
 
                   {expandedId === s.id && (
                     <tr key={`${s.id}-items`} className="bg-gray-50/60">
-                      <td colSpan={isAdmin ? 8 : 7} className="border-t border-gray-100">
+                      <td colSpan={isAdmin ? 9 : 8} className="border-t border-gray-100">
                         <SaleItems id={s.id} />
                       </td>
                     </tr>

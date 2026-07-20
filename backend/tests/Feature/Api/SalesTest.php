@@ -130,6 +130,35 @@ it('admin can revert a sale and stock is restored', function () {
     expect((int) $revertMovement->quantity)->toBe(5);
 });
 
+it('sales list shows client name when linked, null when not', function () {
+    $f = salesFixtures();
+    $clientId = DB::table('clients')->insertGetId([
+        'location_id' => $f['shopId'], 'name' => 'SalesTestClient'.uniqid(),
+        'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    DB::table('sales')->insert([
+        'location_id' => $f['shopId'], 'sold_by' => $f['seller']->id, 'client_id' => $clientId,
+        'payment_method' => 'nmb', 'total_amount' => 5000, 'sale_date' => today(),
+        'created_at' => now(), 'updated_at' => now(),
+    ]);
+    DB::table('sales')->insert([
+        'location_id' => $f['shopId'], 'sold_by' => $f['seller']->id, 'client_id' => null,
+        'payment_method' => 'cash', 'total_amount' => 3000, 'sale_date' => today(),
+        'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    Sanctum::actingAs($f['admin']);
+    $response = $this->getJson('/api/v1/sales')->assertOk();
+
+    $rows = collect($response->json('data'));
+    $withClient = $rows->firstWhere('client_id', $clientId);
+    $withoutClient = $rows->first(fn ($r) => $r['client_id'] === null && (int) $r['total_amount'] === 3000);
+
+    expect($withClient['client_name'])->toStartWith('SalesTestClient');
+    expect($withoutClient['client_name'])->toBeNull();
+});
+
 it('seller cannot revert a sale', function () {
     $f = salesFixtures();
     $saleId = DB::table('sales')->insertGetId([
