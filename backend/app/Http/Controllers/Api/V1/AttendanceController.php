@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class AttendanceController extends Controller
 {
@@ -42,6 +43,25 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
+
+        $recordedAt = $validated['recorded_at'] ?? now();
+        $sameDayActions = Attendance::where('user_id', $user->id)
+            ->whereDate('recorded_at', Carbon::parse($recordedAt)->toDateString())
+            ->pluck('action');
+
+        if ($validated['action'] === 'clock_in' && $sameDayActions->contains('clock_in')) {
+            return response()->json(['message' => 'You have already clocked in today.'], 422);
+        }
+
+        if ($validated['action'] === 'clock_out') {
+            if (! $sameDayActions->contains('clock_in')) {
+                return response()->json(['message' => 'You must clock in before you can clock out.'], 422);
+            }
+            if ($sameDayActions->contains('clock_out')) {
+                return response()->json(['message' => 'You have already clocked out today.'], 422);
+            }
+        }
+
         $location = Location::find($user->location_id);
 
         $isWithinGeofence = false;
@@ -73,7 +93,7 @@ class AttendanceController extends Controller
             'latitude' => $validated['latitude'],
             'longitude' => $validated['longitude'],
             'is_within_geofence' => $isWithinGeofence,
-            'recorded_at' => $validated['recorded_at'] ?? now(),
+            'recorded_at' => $recordedAt,
         ]);
 
         return response()->json([

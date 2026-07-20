@@ -44,7 +44,34 @@ it('seller can clock in and is_within_geofence is true when within 100m', functi
     }
 });
 
-it('clock_in is marked outside geofence when beyond radius', function () {
+it('clock_out is rejected when outside geofence radius', function () {
+    $f = attendanceShop();
+    Sanctum::actingAs($f['seller']);
+    $locationIdsJson = json_encode([$f['shopId']]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        // Clock in first (within geofence), so this test exercises only the
+        // geofence rejection, not the same-day sequence constraint.
+        $this->postJson('/api/v1/attendance', [
+            'action'    => 'clock_in',
+            'latitude'  => $f['shopLat'],
+            'longitude' => $f['shopLng'],
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/attendance', [
+            'action'    => 'clock_out',
+            'latitude'  => $f['shopLat'] + 0.01, // ~1.1km — outside 100m geofence
+            'longitude' => $f['shopLng'],
+        ])->assertStatus(422);
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
+it('normal clock_in then clock_out sequence succeeds', function () {
     $f = attendanceShop();
     Sanctum::actingAs($f['seller']);
     $locationIdsJson = json_encode([$f['shopId']]);
@@ -53,12 +80,80 @@ it('clock_in is marked outside geofence when beyond radius', function () {
 
     try {
         $this->postJson('/api/v1/attendance', [
-            'action'    => 'clock_out',
-            'latitude'  => $f['shopLat'] + 0.01, // ~1.1km — outside
-            'longitude' => $f['shopLng'],
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.is_within_geofence', false);
+            'action' => 'clock_in', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_out', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertCreated()->assertJsonPath('data.action', 'clock_out');
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
+it('clock_out is rejected when there is no prior clock_in that day', function () {
+    $f = attendanceShop();
+    Sanctum::actingAs($f['seller']);
+    $locationIdsJson = json_encode([$f['shopId']]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_out', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertStatus(422);
+
+        expect(DB::table('attendance')->where('user_id', $f['seller']->id)->count())->toBe(0);
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
+it('duplicate clock_in on the same day is rejected', function () {
+    $f = attendanceShop();
+    Sanctum::actingAs($f['seller']);
+    $locationIdsJson = json_encode([$f['shopId']]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_in', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_in', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertStatus(422);
+
+        expect(DB::table('attendance')->where('user_id', $f['seller']->id)->where('action', 'clock_in')->count())->toBe(1);
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
+it('duplicate clock_out on the same day is rejected', function () {
+    $f = attendanceShop();
+    Sanctum::actingAs($f['seller']);
+    $locationIdsJson = json_encode([$f['shopId']]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_in', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertCreated();
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_out', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/attendance', [
+            'action' => 'clock_out', 'latitude' => $f['shopLat'], 'longitude' => $f['shopLng'],
+        ])->assertStatus(422);
+
+        expect(DB::table('attendance')->where('user_id', $f['seller']->id)->where('action', 'clock_out')->count())->toBe(1);
     } finally {
         DB::unprepared('RESET app.role');
         DB::unprepared('RESET app.location_ids');

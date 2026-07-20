@@ -69,6 +69,9 @@ export default function AttendancePage() {
   const todayStr = new Date().toLocaleDateString()
   const todayRecords = (data?.data ?? []).filter(r => new Date(r.recorded_at).toLocaleDateString() === todayStr)
   const lastActionToday = todayRecords[0]?.action ?? null
+  const dayComplete = lastActionToday === 'clock_out'
+  const canClockIn = lastActionToday === null
+  const canClockOut = lastActionToday === 'clock_in'
 
   return (
     <div className="space-y-6">
@@ -90,17 +93,21 @@ export default function AttendancePage() {
           </p>
         )}
 
+        {dayComplete && (
+          <p className="text-sm text-gray-500">Today's attendance is complete.</p>
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={() => requestGeolocation('clock_in')}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !canClockIn}
             className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary-600 h-10 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
           >
             <LogIn size={16} /> Clock In
           </button>
           <button
             onClick={() => requestGeolocation('clock_out')}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !canClockOut}
             className="flex flex-1 items-center justify-center gap-2 rounded-md border border-gray-200 h-10 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             <LogOut size={16} /> Clock Out
