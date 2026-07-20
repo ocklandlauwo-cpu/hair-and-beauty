@@ -112,14 +112,9 @@ export default function DashboardPage() {
               shops={dashData.expenses.this_month_by_shop}
             />
             <BreakdownCard
-              label="Asset Value (Shops)"
-              total={dashData.asset_value.total}
-              shops={dashData.asset_value.by_shop}
-            />
-            <BreakdownCard
-              label="Asset Value (Store)"
-              total={dashData.store_asset_value.total}
-              shops={dashData.store_asset_value.by_location}
+              label="Asset Value (Shops and Store)"
+              total={(Number(dashData.asset_value.total) + Number(dashData.store_asset_value.total)).toFixed(2)}
+              shops={[...dashData.asset_value.by_shop, ...dashData.store_asset_value.by_location]}
             />
           </div>
 
