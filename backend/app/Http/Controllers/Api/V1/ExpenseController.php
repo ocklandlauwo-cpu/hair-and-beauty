@@ -17,7 +17,10 @@ class ExpenseController extends Controller
         $expenses = Expense::with('location')->latest('expense_date')->paginate(50);
         $paged = $expenses->through(fn ($e) => array_merge(
             $e->only(self::FIELDS),
-            ['location_name' => $e->location?->name],
+            [
+                'expense_date'  => $e->expense_date->format('Y-m-d'),
+                'location_name' => $e->location?->name,
+            ],
         ));
 
         return response()->json([
@@ -50,13 +53,19 @@ class ExpenseController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return response()->json(['data' => $expense->only(self::FIELDS)], 201);
+        return response()->json(['data' => array_merge(
+            $expense->only(self::FIELDS),
+            ['expense_date' => $expense->expense_date->format('Y-m-d')],
+        )], 201);
     }
 
     public function show(Expense $expense): JsonResponse
     {
         $this->authorize('viewAny', Expense::class);
 
-        return response()->json(['data' => $expense->only(self::FIELDS)]);
+        return response()->json(['data' => array_merge(
+            $expense->only(self::FIELDS),
+            ['expense_date' => $expense->expense_date->format('Y-m-d')],
+        )]);
     }
 }

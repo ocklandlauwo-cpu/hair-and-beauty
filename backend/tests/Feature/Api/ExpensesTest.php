@@ -53,6 +53,39 @@ it('expense category must be valid', function () {
     ])->assertUnprocessable();
 });
 
+it('expense_date is returned as a plain date string with no time component', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'DateShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $seller = User::factory()->seller()->create(['location_id' => $shopId]);
+    Sanctum::actingAs($seller);
+    $locationIdsJson = json_encode([$shopId]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        $expectedDate = today()->toDateString();
+
+        $createRes = $this->postJson('/api/v1/expenses', [
+            'category'     => 'rent',
+            'amount'       => 100000,
+            'expense_date' => $expectedDate,
+        ])->assertCreated();
+
+        expect($createRes->json('data.expense_date'))->toBe($expectedDate);
+
+        $expenseId = $createRes->json('data.id');
+        $this->getJson("/api/v1/expenses/{$expenseId}")
+            ->assertOk()
+            ->assertJsonPath('data.expense_date', $expectedDate);
+
+        $listRes = $this->getJson('/api/v1/expenses')->assertOk();
+        $row = collect($listRes->json('data'))->firstWhere('id', $expenseId);
+        expect($row['expense_date'])->toBe($expectedDate);
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
 it('admin can list all expenses', function () {
     $shopId = DB::table('locations')->insertGetId(['name' => 'ListShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
     $seller  = User::factory()->seller()->create(['location_id' => $shopId]);

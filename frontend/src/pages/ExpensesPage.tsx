@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
 
 const columns = [
-  { key: 'expense_date', header: 'Date' },
+  { key: 'expense_date', header: 'Date', render: (e: Expense) => new Date(e.expense_date).toLocaleDateString() },
   { key: 'location_name', header: 'Shop', render: (e: Expense) => e.location_name ?? '—' },
   { key: 'category', header: 'Category', render: (e: Expense) => <span className="capitalize">{e.category}</span> },
   { key: 'amount', header: 'Amount (TZS)', render: (e: Expense) => Number(e.amount).toLocaleString('en-US') },
