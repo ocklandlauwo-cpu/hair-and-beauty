@@ -10,6 +10,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
@@ -23,6 +24,48 @@ class PurchaseController extends Controller
             $p->only(['id', 'purchased_by', 'supplier_name', 'invoice_number', 'purchase_date', 'notes']),
             ['total_amount' => $p->items->sum(fn ($i) => $i->quantity * (float) $i->unit_cost)],
         )));
+    }
+
+    public function forecast(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Purchase::class);
+
+        $request->validate([
+            'location_id' => ['required', 'integer', 'exists:locations,id'],
+            'months'      => ['required', 'integer', 'min:2', 'max:12'],
+        ]);
+
+        $locationId = $request->integer('location_id');
+        $months     = $request->integer('months');
+
+        $rows = DB::select("
+            WITH avg_sales AS (
+                SELECT si.product_id, SUM(si.quantity)::decimal / 90 AS avg_daily
+                FROM sale_items si
+                JOIN sales s ON s.id = si.sale_id
+                WHERE s.location_id = ? AND s.sale_date >= CURRENT_DATE - 90 AND s.is_reverted = false
+                GROUP BY si.product_id
+            ),
+            stock AS (
+                SELECT product_id, current_stock FROM v_current_stock WHERE location_id = ?
+            )
+            SELECT
+                p.id                                                                       AS product_id,
+                p.name                                                                     AS product_name,
+                cat.name                                                                   AS category_name,
+                ROUND(COALESCE(av.avg_daily, 0), 2)                                        AS avg_daily_sales,
+                COALESCE(st.current_stock, 0)                                              AS current_stock,
+                ROUND(COALESCE(av.avg_daily, 0) * 30 * ?)::integer                         AS projected_need,
+                GREATEST(ROUND(COALESCE(av.avg_daily, 0) * 30 * ?)::integer - COALESCE(st.current_stock, 0), 0) AS suggested_purchase_qty
+            FROM products p
+            LEFT JOIN categories cat ON cat.id = p.category_id
+            LEFT JOIN avg_sales av ON av.product_id = p.id
+            LEFT JOIN stock st ON st.product_id = p.id
+            WHERE p.is_active = true
+            ORDER BY suggested_purchase_qty DESC
+        ", [$locationId, $locationId, $months, $months]);
+
+        return response()->json(['data' => $rows]);
     }
 
     public function show(Purchase $purchase): JsonResponse

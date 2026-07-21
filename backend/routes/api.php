@@ -61,6 +61,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         // Purchasing & Inventory
         Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
         Route::patch('/locations/{location}', [LocationController::class, 'update'])->name('locations.update');
+        Route::get('/purchases/forecast', [PurchaseController::class, 'forecast'])->name('purchases.forecast');
         Route::apiResource('/purchases', PurchaseController::class)->only(['index', 'show']);
         Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
         Route::get('/stock/movements', [StockController::class, 'movements'])->name('stock.movements');
