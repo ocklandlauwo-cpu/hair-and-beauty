@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi, type ShopBreakdown } from '@/api/dashboard'
 import { newsApi } from '@/api/news'
@@ -51,6 +52,16 @@ function BreakdownCard({ label, total, shops, isCurrency = true, colorNegative =
 // ── Page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth()
+  const [expandedNewsIds, setExpandedNewsIds] = useState<Set<number>>(new Set())
+
+  const toggleNewsExpanded = (id: number) => {
+    setExpandedNewsIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const { data: dashData, isLoading: dashLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -162,12 +173,24 @@ export default function DashboardPage() {
         <div>
           <h2 className="mb-3 text-sm font-semibold text-gray-700">Announcements</h2>
           <div className="space-y-3">
-            {news.slice(0, 3).map(item => (
+            {news.slice(0, 3).map(item => {
+              const isExpanded = expandedNewsIds.has(item.id)
+              const isLong = item.body.length > 120
+              return (
               <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
                 <h3 className="text-sm font-medium text-gray-900">{item.title}</h3>
-                <p className="mt-1 text-xs text-gray-500 line-clamp-2">{item.body}</p>
+                <p className={`mt-1 text-xs text-gray-500 ${isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>{item.body}</p>
+                {isLong && (
+                  <button
+                    onClick={() => toggleNewsExpanded(item.id)}
+                    className="mt-1 text-xs font-medium text-primary-600 hover:underline"
+                  >
+                    {isExpanded ? 'Show Less' : 'View Full'}
+                  </button>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
