@@ -73,6 +73,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/ai-reports/fastest-products', FastestProductsController::class)->name('ai-reports.fastest-products');
 
         // Distribution
+        Route::get('/distributions/suggested-movements', [DistributionController::class, 'suggestedMovements'])->name('distributions.suggested-movements');
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
         Route::post('/distributions/{distribution}/revert', RevertDistributionController::class)->name('distributions.revert');

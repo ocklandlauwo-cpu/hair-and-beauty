@@ -45,6 +45,93 @@ class DistributionController extends Controller
         )]);
     }
 
+    public function suggestedMovements(): JsonResponse
+    {
+        $this->authorize('create', Distribution::class);
+
+        $rows = DB::select("
+            WITH avg_sales AS (
+                SELECT si.product_id, s.location_id, SUM(si.quantity)::decimal / 90 AS avg_daily
+                FROM sale_items si
+                JOIN sales s ON s.id = si.sale_id
+                WHERE s.sale_date >= CURRENT_DATE - 90 AND s.is_reverted = false
+                GROUP BY si.product_id, s.location_id
+            )
+            SELECT
+                p.id AS product_id,
+                p.name AS product_name,
+                cat.name AS category_name,
+                l.id AS location_id,
+                l.name AS location_name,
+                COALESCE(av.avg_daily, 0) AS avg_daily_sales,
+                COALESCE(cs.current_stock, 0) AS current_stock
+            FROM products p
+            LEFT JOIN categories cat ON cat.id = p.category_id
+            CROSS JOIN locations l
+            LEFT JOIN avg_sales av ON av.product_id = p.id AND av.location_id = l.id
+            LEFT JOIN v_current_stock cs ON cs.product_id = p.id AND cs.location_id = l.id
+            WHERE p.is_active = true AND l.is_active = true AND l.type = 'shop'
+              AND (COALESCE(av.avg_daily, 0) > 0 OR COALESCE(cs.current_stock, 0) > 0)
+        ");
+
+        $byProduct = collect($rows)->groupBy('product_id');
+        $suggestions = [];
+
+        foreach ($byProduct as $productRows) {
+            $deficits = [];
+            $surpluses = [];
+
+            foreach ($productRows as $r) {
+                $avgDaily = (float) $r->avg_daily_sales;
+                $stock = (int) $r->current_stock;
+                $daysOfCover = $avgDaily > 0 ? $stock / $avgDaily : null;
+
+                if ($avgDaily > 0 && $daysOfCover <= 15) {
+                    $deficits[] = ['row' => $r, 'days' => $daysOfCover];
+                } elseif ($stock > 0 && ($avgDaily === 0.0 || $daysOfCover >= 60)) {
+                    $surpluses[] = ['row' => $r, 'days' => $daysOfCover];
+                }
+            }
+
+            if (! $deficits || ! $surpluses) {
+                continue;
+            }
+
+            usort($deficits, fn ($a, $b) => $a['days'] <=> $b['days']);
+            usort($surpluses, fn ($a, $b) => ($b['days'] ?? PHP_FLOAT_MAX) <=> ($a['days'] ?? PHP_FLOAT_MAX));
+
+            $dest = $deficits[0]['row'];
+            $src = $surpluses[0]['row'];
+
+            $targetSrc = (float) $src->avg_daily_sales * 30;
+            $excessSrc = (float) $src->current_stock - $targetSrc;
+
+            $targetDest = (float) $dest->avg_daily_sales * 30;
+            $shortfallDest = $targetDest - (float) $dest->current_stock;
+
+            $qty = (int) round(max(min($excessSrc, $shortfallDest), 0));
+
+            if ($qty > 0) {
+                $suggestions[] = [
+                    'product_id' => (int) $src->product_id,
+                    'product_name' => $src->product_name,
+                    'category_name' => $src->category_name,
+                    'from_location_id' => (int) $src->location_id,
+                    'from_location_name' => $src->location_name,
+                    'from_days_of_cover' => $surpluses[0]['days'] !== null ? (int) round($surpluses[0]['days']) : null,
+                    'to_location_id' => (int) $dest->location_id,
+                    'to_location_name' => $dest->location_name,
+                    'to_days_of_cover' => (int) round($deficits[0]['days']),
+                    'suggested_qty' => $qty,
+                ];
+            }
+        }
+
+        usort($suggestions, fn ($a, $b) => $b['suggested_qty'] <=> $a['suggested_qty']);
+
+        return response()->json(['data' => array_values($suggestions)]);
+    }
+
     public function store(StoreDistributionRequest $request): JsonResponse
     {
         $user = $request->user();
