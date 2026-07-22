@@ -38,6 +38,19 @@ export interface ConfirmDistributionPayload {
   items: Array<{ distribution_item_id: number; quantity_received: number }>
 }
 
+export interface SuggestedMovement {
+  product_id: number
+  product_name: string
+  category_name: string | null
+  from_location_id: number
+  from_location_name: string
+  from_days_of_cover: number | null
+  to_location_id: number
+  to_location_name: string
+  to_days_of_cover: number
+  suggested_qty: number
+}
+
 export const distributionsApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Distribution>>('/distributions', { params: { page } }),
@@ -51,4 +64,6 @@ export const distributionsApi = {
     api.post<ApiResponse<Distribution>>(`/distributions/${id}/revert`),
   cancel: (id: number) =>
     api.post<ApiResponse<Distribution>>(`/distributions/${id}/cancel`),
+  suggestedMovements: () =>
+    api.get<{ data: SuggestedMovement[] }>('/distributions/suggested-movements'),
 }
