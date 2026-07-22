@@ -37,6 +37,16 @@ export interface CreatePurchasePayload {
   }>
 }
 
+export interface ForecastRow {
+  product_id: number
+  product_name: string
+  category_name: string | null
+  avg_daily_sales: string
+  current_stock: number
+  projected_need: number
+  suggested_purchase_qty: number
+}
+
 export const purchasesApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Purchase>>('/purchases', { params: { page } }),
@@ -44,4 +54,6 @@ export const purchasesApi = {
     api.get<ApiResponse<PurchaseDetail>>(`/purchases/${id}`),
   create: (data: CreatePurchasePayload) =>
     api.post<ApiResponse<Purchase>>('/purchases', data),
+  forecast: (locationId: number, months: number) =>
+    api.get<{ data: ForecastRow[] }>('/purchases/forecast', { params: { location_id: locationId, months } }),
 }
