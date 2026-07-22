@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, Plus, Search } from 'lucide-react'
-import { distributionsApi, type Distribution, type DistributionDetail } from '@/api/distributions'
+import { ChevronDown, ChevronRight, Plus, Search, History, ArrowLeftRight } from 'lucide-react'
+import { distributionsApi, type Distribution, type DistributionDetail, type SuggestedMovement } from '@/api/distributions'
 import { useAuth } from '@/contexts/AuthContext'
 import Badge from '@/components/ui/Badge'
 
@@ -49,9 +49,63 @@ function DistributionItems({ id }: { id: number }) {
   )
 }
 
+// ── Suggested Movement Tab ──────────────────────────────────────────────
+function SuggestedMovementTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['suggested-movements'],
+    queryFn: () => distributionsApi.suggestedMovements().then(r => r.data.data),
+  })
+
+  if (isLoading) return <p className="text-sm text-gray-400 py-8 text-center">Loading…</p>
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
+        <p className="text-sm text-gray-400">No rebalancing suggestions right now — stock levels look balanced across shops.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-50 text-xs text-gray-500">
+          <tr>
+            <th className="px-4 py-3 text-left font-medium">Product</th>
+            <th className="px-4 py-3 text-left font-medium">Category</th>
+            <th className="px-4 py-3 text-left font-medium">From Shop</th>
+            <th className="px-4 py-3 text-left font-medium">To Shop</th>
+            <th className="px-4 py-3 text-right font-medium">Suggested Qty</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {data.map((row: SuggestedMovement) => (
+            <tr key={row.product_id}>
+              <td className="px-4 py-3 text-gray-800">{row.product_name}</td>
+              <td className="px-4 py-3 text-gray-500 text-xs">{row.category_name ?? '—'}</td>
+              <td className="px-4 py-3 text-gray-600">
+                {row.from_location_name}
+                <span className="block text-xs text-gray-400">
+                  {row.from_days_of_cover === null ? 'no recent sales' : `${row.from_days_of_cover}d cover`}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-gray-600">
+                {row.to_location_name}
+                <span className="block text-xs text-gray-400">{row.to_days_of_cover}d cover</span>
+              </td>
+              <td className="px-4 py-3 text-right font-semibold text-gray-900">{row.suggested_qty}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function DistributionsPage() {
   const { user } = useAuth()
   const qc = useQueryClient()
+  const [tab, setTab] = useState<'history' | 'suggested'>('history')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [shopSearch, setShopSearch] = useState('')
   const [revertId, setRevertId] = useState<number | null>(null)
@@ -105,7 +159,7 @@ export default function DistributionsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Distributions</h1>
-        {isAdminOrKeeper && (
+        {tab === 'history' && isAdminOrKeeper && (
           <Link
             to="/distributions/new"
             className="flex items-center gap-2 rounded-md bg-primary-600 px-4 h-10 text-sm font-medium text-white hover:bg-primary-700"
@@ -115,6 +169,24 @@ export default function DistributionsPage() {
         )}
       </div>
 
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+        {([
+          ['history',   'History',            History],
+          ['suggested', 'Suggested Movement', ArrowLeftRight],
+        ] as const).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${tab === id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'history' && (
+      <>
       {/* Shop search */}
       <div className="relative max-w-xs">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -212,6 +284,10 @@ export default function DistributionsPage() {
           </table>
         </div>
       )}
+      </>
+      )}
+
+      {tab === 'suggested' && <SuggestedMovementTab />}
 
       {/* Cancel confirmation modal */}
       {cancelId !== null && (
