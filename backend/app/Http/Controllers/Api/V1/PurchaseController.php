@@ -53,6 +53,7 @@ class PurchaseController extends Controller
                 p.id                                                                       AS product_id,
                 p.name                                                                     AS product_name,
                 cat.name                                                                   AS category_name,
+                p.latest_cost                                                              AS latest_cost,
                 ROUND(COALESCE(av.avg_daily, 0), 2)                                        AS avg_daily_sales,
                 COALESCE(st.current_stock, 0)                                              AS current_stock,
                 ROUND(COALESCE(av.avg_daily, 0) * 30 * ?)::integer                         AS projected_need,

@@ -41,6 +41,7 @@ export interface ForecastRow {
   product_id: number
   product_name: string
   category_name: string | null
+  latest_cost: string
   avg_daily_sales: string
   current_stock: number
   projected_need: number

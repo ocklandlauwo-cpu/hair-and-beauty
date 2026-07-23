@@ -107,6 +107,7 @@ function ForecastTab() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Product</th>
                 <th className="px-4 py-3 text-left font-medium">Category</th>
+                <th className="px-4 py-3 text-right font-medium">Buying Price (TZS)</th>
                 <th className="px-4 py-3 text-right font-medium">Avg Daily Sales</th>
                 <th className="px-4 py-3 text-right font-medium">Current Stock</th>
                 <th className="px-4 py-3 text-right font-medium">Projected Need</th>
@@ -118,6 +119,7 @@ function ForecastTab() {
                 <tr key={row.product_id}>
                   <td className="px-4 py-3 text-gray-800">{row.product_name}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{row.category_name ?? '—'}</td>
+                  <td className="px-4 py-3 text-right text-gray-600">{fmt(Number(row.latest_cost))}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{Number(row.avg_daily_sales).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{row.current_stock}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{row.projected_need}</td>
