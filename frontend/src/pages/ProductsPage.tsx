@@ -319,6 +319,11 @@ export default function ProductsPage() {
   const columns = useMemo(() => [
     { key: 'name', header: 'Product' },
     { key: 'category_name', header: 'Category', render: (p: Product) => p.category_name ?? '—' },
+    {
+      key: 'latest_cost',
+      header: 'Latest Purchase Cost (TZS)',
+      render: (p: Product) => Number(p.latest_cost) === 0 ? '—' : Number(p.latest_cost).toLocaleString('en-US'),
+    },
     { key: 'retail_price', header: 'Retail (TZS)', render: (p: Product) => Number(p.retail_price).toLocaleString('en-US') },
     { key: 'wholesale_price', header: 'Wholesale (TZS)', render: (p: Product) => Number(p.wholesale_price).toLocaleString('en-US') },
     { key: 'wholesale_threshold', header: 'Wholesale Qty', render: (p: Product) => p.wholesale_threshold },
