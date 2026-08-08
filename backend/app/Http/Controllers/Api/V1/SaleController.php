@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSaleRequest;
+use App\Models\Location;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockMovement;
@@ -38,6 +39,53 @@ class SaleController extends Controller
                 'client_name'   => $s->client?->name,
             ],
         )));
+    }
+
+    public function analysis(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Sale::class);
+
+        $request->validate([
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
+            'date_from'   => ['nullable', 'date'],
+            'date_to'     => ['nullable', 'date'],
+            'search'      => ['nullable', 'string', 'max:255'],
+            'page'        => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $dateFrom   = $request->query('date_from', now()->startOfMonth()->toDateString());
+        $dateTo     = $request->query('date_to',   now()->toDateString());
+        $locationId = $request->query('location_id');
+
+        $rows = DB::table('sale_items as si')
+            ->join('sales as s', 's.id', '=', 'si.sale_id')
+            ->join('products as p', 'p.id', '=', 'si.product_id')
+            ->where('s.is_reverted', false)
+            ->whereDate('s.sale_date', '>=', $dateFrom)
+            ->whereDate('s.sale_date', '<=', $dateTo)
+            ->when($locationId, fn ($q, $v) => $q->where('s.location_id', $v))
+            ->when($request->query('search'), fn ($q, $v) => $q->where('p.name', 'ilike', "%{$v}%"))
+            ->groupBy('p.id', 'p.name')
+            ->orderBy('p.name')
+            ->select('p.id as product_id', 'p.name as product_name', DB::raw('SUM(si.quantity) as quantity_sold'))
+            ->paginate(50);
+
+        $shopLabel = $locationId ? Location::find($locationId)?->name : null;
+
+        return response()->json([
+            'data' => collect($rows->items())->map(fn ($row) => [
+                'product_id'    => $row->product_id,
+                'product_name'  => $row->product_name,
+                'quantity_sold' => (int) $row->quantity_sold,
+                'shop'          => $shopLabel ?? 'All Shops',
+            ]),
+            'meta' => [
+                'current_page' => $rows->currentPage(),
+                'last_page'    => $rows->lastPage(),
+                'per_page'     => $rows->perPage(),
+                'total'        => $rows->total(),
+            ],
+        ]);
     }
 
     public function show(Sale $sale): JsonResponse

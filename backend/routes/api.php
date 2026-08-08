@@ -81,6 +81,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // POS
         Route::apiResource('/clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::get('/sales/analysis', [SaleController::class, 'analysis'])->name('sales.analysis');
         Route::apiResource('/sales', SaleController::class)->only(['index', 'show']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
 
