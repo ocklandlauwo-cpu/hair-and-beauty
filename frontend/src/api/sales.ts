@@ -36,6 +36,13 @@ export interface SaleDetail extends Sale {
   items: SaleDetailItem[]
 }
 
+export interface SalesAnalysisRow {
+  product_id: number
+  product_name: string
+  quantity_sold: number
+  shop: string
+}
+
 export interface CreateSalePayload {
   payment_method: 'nmb' | 'airtel' | 'vodacom' | 'tigo' | 'cash'
   sale_date: string
@@ -54,4 +61,6 @@ export const salesApi = {
     api.post<ApiResponse<Sale>>('/sales', data),
   revert: (id: number, reason: string) =>
     api.post<ApiResponse<Sale>>(`/sales/${id}/revert`, { reason }),
+  analysis: (params?: { location_id?: number | ''; date_from?: string; date_to?: string; search?: string; page?: number }) =>
+    api.get<PaginatedResponse<SalesAnalysisRow>>('/sales/analysis', { params }),
 }
