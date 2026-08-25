@@ -39,12 +39,34 @@ class PurchaseController extends Controller
         $months     = $request->integer('months');
 
         $rows = DB::select("
-            WITH avg_sales AS (
+            WITH avg_sales_90d AS (
                 SELECT si.product_id, SUM(si.quantity)::decimal / 90 AS avg_daily
                 FROM sale_items si
                 JOIN sales s ON s.id = si.sale_id
                 WHERE s.location_id = ? AND s.sale_date >= CURRENT_DATE - 90 AND s.is_reverted = false
                 GROUP BY si.product_id
+            ),
+            avg_sales_last_year_month AS (
+                SELECT si.product_id,
+                       SUM(si.quantity)::decimal / EXTRACT(DAY FROM (date_trunc('month', CURRENT_DATE) - INTERVAL '1 year' + INTERVAL '1 month' - INTERVAL '1 day')) AS avg_daily
+                FROM sale_items si
+                JOIN sales s ON s.id = si.sale_id
+                WHERE s.location_id = ?
+                  AND s.sale_date >= date_trunc('month', CURRENT_DATE) - INTERVAL '1 year'
+                  AND s.sale_date <  date_trunc('month', CURRENT_DATE) - INTERVAL '1 year' + INTERVAL '1 month'
+                  AND s.is_reverted = false
+                GROUP BY si.product_id
+            ),
+            blended_sales AS (
+                SELECT
+                    p.id AS product_id,
+                    CASE
+                        WHEN avly.avg_daily IS NOT NULL THEN (COALESCE(av90.avg_daily, 0) + avly.avg_daily) / 2
+                        ELSE COALESCE(av90.avg_daily, 0)
+                    END AS avg_daily
+                FROM products p
+                LEFT JOIN avg_sales_90d av90 ON av90.product_id = p.id
+                LEFT JOIN avg_sales_last_year_month avly ON avly.product_id = p.id
             ),
             stock AS (
                 SELECT product_id, current_stock FROM v_current_stock WHERE location_id = ?
@@ -54,17 +76,17 @@ class PurchaseController extends Controller
                 p.name                                                                     AS product_name,
                 cat.name                                                                   AS category_name,
                 p.latest_cost                                                              AS latest_cost,
-                ROUND(COALESCE(av.avg_daily, 0), 2)                                        AS avg_daily_sales,
+                ROUND(COALESCE(bs.avg_daily, 0), 2)                                        AS avg_daily_sales,
                 COALESCE(st.current_stock, 0)                                              AS current_stock,
-                ROUND(COALESCE(av.avg_daily, 0) * 30 * ?)::integer                         AS projected_need,
-                GREATEST(ROUND(COALESCE(av.avg_daily, 0) * 30 * ?)::integer - COALESCE(st.current_stock, 0), 0) AS suggested_purchase_qty
+                ROUND(COALESCE(bs.avg_daily, 0) * 30 * ?)::integer                         AS projected_need,
+                GREATEST(ROUND(COALESCE(bs.avg_daily, 0) * 30 * ?)::integer - COALESCE(st.current_stock, 0), 0) AS suggested_purchase_qty
             FROM products p
             LEFT JOIN categories cat ON cat.id = p.category_id
-            LEFT JOIN avg_sales av ON av.product_id = p.id
+            LEFT JOIN blended_sales bs ON bs.product_id = p.id
             LEFT JOIN stock st ON st.product_id = p.id
             WHERE p.is_active = true
             ORDER BY suggested_purchase_qty DESC
-        ", [$locationId, $locationId, $months, $months]);
+        ", [$locationId, $locationId, $locationId, $months, $months]);
 
         return response()->json(['data' => $rows]);
     }
