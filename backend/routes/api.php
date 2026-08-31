@@ -21,12 +21,14 @@ use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\NewsController;
 use App\Http\Controllers\Api\V1\PnlController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProviderController;
 use App\Http\Controllers\Api\V1\PurchaseController;
 use App\Http\Controllers\Api\V1\ReconciliationController;
 use App\Http\Controllers\Api\V1\VerifyReconciliationController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
+use App\Http\Controllers\Api\V1\SaloonServiceController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\TopClientsController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -84,6 +86,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/sales/analysis', [SaleController::class, 'analysis'])->name('sales.analysis');
         Route::apiResource('/sales', SaleController::class)->only(['index', 'show']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
+
+        // Saloon Center — catalogs
+        Route::apiResource('/providers', ProviderController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('/saloon-services', SaloonServiceController::class)->only(['index', 'store', 'update', 'destroy']);
 
         // Reconciliation & User Management
         Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index']);
