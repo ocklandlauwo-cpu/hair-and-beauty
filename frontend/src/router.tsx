@@ -27,6 +27,10 @@ import GraphicalViewPage from '@/pages/GraphicalViewPage'
 import SlowProductsPage from '@/pages/ai-reports/SlowProductsPage'
 import TopClientsPage from '@/pages/ai-reports/TopClientsPage'
 import FastestProductsPage from '@/pages/ai-reports/FastestProductsPage'
+import SaloonCenterPage from '@/pages/SaloonCenterPage'
+import ProvidersPage from '@/pages/ProvidersPage'
+import SaloonServicesPage from '@/pages/SaloonServicesPage'
+import SaloonToolsPage from '@/pages/SaloonToolsPage'
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +54,7 @@ export const router = createBrowserRouter([
           { path: 'distributions/:id/confirm', element: <ConfirmDistributionPage /> },
           { path: 'sales', element: <SalesPage /> },
           { path: 'reconciliations', element: <ReconciliationPage /> },
+          { path: 'saloon-center', element: <SaloonCenterPage /> },
           { path: 'attendance', element: <AttendancePage /> },
           { path: 'expenses', element: <ExpensesPage /> },
           { path: 'news', element: <NewsPage /> },
@@ -59,6 +64,9 @@ export const router = createBrowserRouter([
             children: [
               { path: 'users', element: <UsersPage /> },
               { path: 'categories', element: <CategoriesPage /> },
+              { path: 'providers', element: <ProvidersPage /> },
+              { path: 'saloon-services', element: <SaloonServicesPage /> },
+              { path: 'saloon-tools', element: <SaloonToolsPage /> },
               { path: 'graphical-view', element: <GraphicalViewPage /> },
               { path: 'products/new', element: <ProductFormPage /> },
               { path: 'products/:id/edit', element: <ProductFormPage /> },

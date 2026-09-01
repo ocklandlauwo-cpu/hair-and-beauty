@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText,
   Users, TrendingUp, ClipboardCheck, Clock, Receipt, UserRound, Tag, BarChart2,
   BrainCircuit, TrendingDown, ChevronDown, Trophy, Zap, Settings, RefreshCw,
-  FileBarChart,
+  FileBarChart, Scissors,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -35,6 +35,7 @@ const allEntries: TopLevelEntry[] = [
   { kind: 'link', to: '/',                label: 'Dashboard',      icon: LayoutDashboard, roles: ['admin', 'store_keeper', 'seller'] },
   { kind: 'link', to: '/stock',           label: 'Stock',          icon: Boxes,           roles: ['admin', 'store_keeper', 'seller'] },
   { kind: 'link', to: '/reconciliations', label: 'Reconciliation', icon: ClipboardCheck,  roles: ['admin', 'store_keeper', 'seller'] },
+  { kind: 'link', to: '/saloon-center',   label: 'Saloon Center',  icon: Scissors,        roles: ['admin', 'store_keeper', 'seller'] },
   { kind: 'link', to: '/expenses',        label: 'Expenses',       icon: Receipt,         roles: ['admin'] },
 
   // Non-admin flat access to routes that move into admin-only groups below —
@@ -68,7 +69,10 @@ const allEntries: TopLevelEntry[] = [
       { kind: 'link', to: '/users',      label: 'Users',      icon: Users },
       { kind: 'link', to: '/products',   label: 'Products',   icon: Package },
       { kind: 'link', to: '/categories', label: 'Categories', icon: Tag },
-      { kind: 'link', to: '/clients',    label: 'Clients',    icon: UserRound },
+      { kind: 'link', to: '/clients',          label: 'Clients',          icon: UserRound },
+      { kind: 'link', to: '/providers',        label: 'Providers',        icon: UserRound },
+      { kind: 'link', to: '/saloon-services',  label: 'Saloon Services',  icon: Scissors },
+      { kind: 'link', to: '/saloon-tools',     label: 'Saloon Tools',     icon: Boxes },
       { kind: 'link', to: '/news',       label: 'News',       icon: FileText },
       { kind: 'link', to: '/attendance', label: 'Attendance', icon: Clock },
     ],
