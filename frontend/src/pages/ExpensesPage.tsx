@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { expensesApi, EXPENSE_CATEGORIES, type Expense } from '@/api/expenses'
+import { expensesApi, EXPENSE_CATEGORIES, BUSINESS_LINES, type BusinessLine, type Expense } from '@/api/expenses'
 import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 const columns = [
   { key: 'expense_date', header: 'Date', render: (e: Expense) => new Date(e.expense_date).toLocaleDateString() },
   { key: 'location_name', header: 'Shop', render: (e: Expense) => e.location_name ?? '—' },
+  { key: 'business_line', header: 'Business Line', render: (e: Expense) => <span className="capitalize">{e.business_line === 'saloon' ? 'Saloon Center' : 'Shop'}</span> },
   { key: 'category', header: 'Category', render: (e: Expense) => <span className="capitalize">{e.category}</span> },
   { key: 'amount', header: 'Amount (TZS)', render: (e: Expense) => Number(e.amount).toLocaleString('en-US') },
   { key: 'notes', header: 'Notes', render: (e: Expense) => e.notes ?? '—' },
@@ -20,6 +21,7 @@ export default function ExpensesPage() {
 
   const [locationId, setLocationId] = useState<number | ''>('')
   const [category, setCategory] = useState<typeof EXPENSE_CATEGORIES[number]>('rent')
+  const [businessLine, setBusinessLine] = useState<BusinessLine>('shop')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
@@ -45,6 +47,7 @@ export default function ExpensesPage() {
       setAmount('')
       setNotes('')
       setLocationId('')
+      setBusinessLine('shop')
       setError(null)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -70,6 +73,7 @@ export default function ExpensesPage() {
       expense_date: date,
       notes: notes || undefined,
       location_id: isAdmin && locationId ? Number(locationId) : undefined,
+      business_line: businessLine,
     })
   }
 
@@ -128,6 +132,20 @@ export default function ExpensesPage() {
                 className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="exp-business-line" className="block text-sm font-medium text-gray-700">Business Line</label>
+            <select
+              id="exp-business-line"
+              value={businessLine}
+              onChange={e => setBusinessLine(e.target.value as BusinessLine)}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+            >
+              {BUSINESS_LINES.map(line => (
+                <option key={line} value={line}>{line === 'saloon' ? 'Saloon Center' : 'Shop'}</option>
+              ))}
+            </select>
           </div>
 
           <div>

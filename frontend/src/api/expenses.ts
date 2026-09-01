@@ -7,6 +7,9 @@ export const EXPENSE_CATEGORIES = [
 
 export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number]
 
+export const BUSINESS_LINES = ['shop', 'saloon'] as const
+export type BusinessLine = typeof BUSINESS_LINES[number]
+
 export interface Expense {
   id: number
   location_id: number
@@ -16,6 +19,7 @@ export interface Expense {
   expense_date: string
   recorded_by: number
   notes: string | null
+  business_line: BusinessLine
 }
 
 export interface PnlData {
@@ -32,7 +36,7 @@ export interface PnlData {
 export const expensesApi = {
   list: (page = 1) =>
     api.get<PaginatedResponse<Expense>>('/expenses', { params: { page } }),
-  create: (data: { category: ExpenseCategory; amount: number; expense_date: string; notes?: string; location_id?: number }) =>
+  create: (data: { category: ExpenseCategory; amount: number; expense_date: string; notes?: string; location_id?: number; business_line?: BusinessLine }) =>
     api.post<ApiResponse<Expense>>('/expenses', data),
 }
 
