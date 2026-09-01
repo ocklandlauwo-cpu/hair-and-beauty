@@ -171,7 +171,6 @@ export default function DashboardPage() {
               shops={dashData.saloon.asset_value.by_shop}
             />
           </div>
-
         </div>
       )}
 

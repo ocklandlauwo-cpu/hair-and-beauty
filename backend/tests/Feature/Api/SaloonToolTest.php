@@ -37,8 +37,12 @@ it('seller cannot list or log a tool purchase', function () {
 });
 
 it('store_keeper cannot list or log a tool purchase', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'STShop4'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
     Sanctum::actingAs(User::factory()->storeKeeper()->create());
     $this->getJson('/api/v1/saloon-tools')->assertForbidden();
+    $this->postJson('/api/v1/saloon-tools', [
+        'location_id' => $shopId, 'name' => 'X', 'quantity' => 1, 'unit_cost' => 100, 'purchase_date' => today()->toDateString(),
+    ])->assertForbidden();
 });
 
 it('quantity must be at least 1 and unit_cost cannot be negative', function () {

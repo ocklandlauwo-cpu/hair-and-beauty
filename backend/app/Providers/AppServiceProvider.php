@@ -8,9 +8,13 @@ use App\Models\Distribution;
 use App\Models\Expense;
 use App\Models\News;
 use App\Models\Product;
+use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\Reconciliation;
 use App\Models\Sale;
+use App\Models\SaloonSale;
+use App\Models\SaloonService;
+use App\Models\SaloonTool;
 use App\Models\User;
 use App\Policies\AskedProductPolicy;
 use App\Policies\ClientPolicy;
@@ -18,9 +22,13 @@ use App\Policies\DistributionPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\NewsPolicy;
 use App\Policies\ProductPolicy;
+use App\Policies\ProviderPolicy;
 use App\Policies\PurchasePolicy;
 use App\Policies\ReconciliationPolicy;
 use App\Policies\SalePolicy;
+use App\Policies\SaloonSalePolicy;
+use App\Policies\SaloonServicePolicy;
+use App\Policies\SaloonToolPolicy;
 use App\Policies\UserManagementPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -50,5 +58,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Client::class, ClientPolicy::class);
         Gate::policy(Reconciliation::class, ReconciliationPolicy::class);
         Gate::policy(User::class, UserManagementPolicy::class);
+        Gate::policy(Provider::class, ProviderPolicy::class);
+        Gate::policy(SaloonService::class, SaloonServicePolicy::class);
+        Gate::policy(SaloonSale::class, SaloonSalePolicy::class);
+        Gate::policy(SaloonTool::class, SaloonToolPolicy::class);
     }
 }

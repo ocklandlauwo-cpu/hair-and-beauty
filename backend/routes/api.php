@@ -89,7 +89,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/sales', SaleController::class)->only(['index', 'show']);
         Route::post('/sales/{sale}/revert', RevertSaleController::class)->name('sales.revert');
 
-        // Saloon Center — catalogs
+        // Saloon Center
         Route::apiResource('/providers', ProviderController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('/saloon-services', SaloonServiceController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('/saloon-sales', [SaloonSaleController::class, 'index'])->name('saloon-sales.index');

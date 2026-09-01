@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSaloonSaleRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class StoreSaloonSaleRequest extends FormRequest
 
         return [
             'location_id'       => $isAdmin
-                ? ['nullable', 'integer', 'exists:locations,id']
+                ? ['required', 'integer', Rule::exists('locations', 'id')->where('type', 'shop')]
                 : ['nullable', 'integer'],
             'provider_id'       => ['required', 'integer', 'exists:providers,id'],
             'saloon_service_id' => ['required', 'integer', 'exists:saloon_services,id'],

@@ -166,7 +166,7 @@ export default function SaloonCenterPage() {
     { key: 'sale_date', header: 'Date', render: (s: { sale_date: string }) => new Date(s.sale_date).toLocaleDateString() },
     { key: 'provider_name', header: 'Provider' },
     { key: 'service_name', header: 'Service' },
-    { key: 'amount', header: 'Amount (TZS)', render: (s: { amount: string }) => fmt(s.amount) },
+    { key: 'amount', header: 'Amount (TZS)', render: (s: { amount: string }) => fmt(s.amount), className: 'text-right' },
     { key: 'location_name', header: 'Shop' },
   ]
 
