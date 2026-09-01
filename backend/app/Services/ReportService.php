@@ -46,6 +46,7 @@ class ReportService
 
         $expenses = DB::table('expenses as e')
             ->join('locations as l', 'l.id', '=', 'e.location_id')
+            ->where('e.business_line', 'shop')
             ->whereBetween('e.expense_date', [$from, $to])
             ->groupBy('l.id', 'l.name', 'e.category')
             ->select('l.name as location_name', 'e.category', DB::raw('SUM(e.amount) as total'))
@@ -54,6 +55,7 @@ class ReportService
             ->get();
 
         $expensesByCategory = DB::table('expenses')
+            ->where('business_line', 'shop')
             ->whereBetween('expense_date', [$from, $to])
             ->groupBy('category')
             ->select('category', DB::raw('SUM(amount) as total'))

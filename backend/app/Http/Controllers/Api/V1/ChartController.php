@@ -57,7 +57,7 @@ class ChartController extends Controller
                 SELECT expense_date::date AS date, location_id,
                        COALESCE(SUM(amount), 0) AS expenses
                 FROM expenses
-                WHERE expense_date::date BETWEEN ? AND ?
+                WHERE expense_date::date BETWEEN ? AND ? AND business_line = 'shop'
                 GROUP BY date, location_id
             ),
             all_dates AS (

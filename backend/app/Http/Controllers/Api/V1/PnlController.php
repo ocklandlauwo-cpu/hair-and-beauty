@@ -46,6 +46,7 @@ class PnlController extends Controller
 
         // Operating expenses
         $expenseQuery = DB::table('expenses')
+            ->where('business_line', 'shop')
             ->whereBetween('expense_date', [$from, $to]);
 
         if ($locationId) {
@@ -57,6 +58,7 @@ class PnlController extends Controller
         );
 
         $expenseBreakdown = DB::table('expenses')
+            ->where('business_line', 'shop')
             ->whereBetween('expense_date', [$from, $to])
             ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
             ->select('category', DB::raw('SUM(amount) as total'))

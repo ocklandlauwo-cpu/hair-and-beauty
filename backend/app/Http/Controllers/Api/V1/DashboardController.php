@@ -33,8 +33,8 @@ class DashboardController extends Controller
         // ── Totals ──────────────────────────────────────────────────────
         $salesToday     = (float) DB::table('sales')->whereDate('sale_date', today())->where('is_reverted', false)->sum('total_amount');
         $salesMonth     = (float) DB::table('sales')->whereYear('sale_date', $year)->whereMonth('sale_date', $month)->where('is_reverted', false)->sum('total_amount');
-        $expensesToday  = (float) DB::table('expenses')->whereDate('expense_date', today())->sum('amount');
-        $expensesMonth  = (float) DB::table('expenses')->whereYear('expense_date', $year)->whereMonth('expense_date', $month)->sum('amount');
+        $expensesToday  = (float) DB::table('expenses')->where('business_line', 'shop')->whereDate('expense_date', today())->sum('amount');
+        $expensesMonth  = (float) DB::table('expenses')->where('business_line', 'shop')->whereYear('expense_date', $year)->whereMonth('expense_date', $month)->sum('amount');
         $pendingDist    = DB::table('distributions')->where('status', 'pending')->count();
         $expiryAlerts   = DB::table('v_expiry_alerts')->count();
         $lowStockAlerts = DB::table('v_low_stock_alerts')->count();
@@ -81,7 +81,7 @@ class DashboardController extends Controller
             SELECT l.id AS location_id, l.name AS location_name,
                    COALESCE(SUM(e.amount), 0)::numeric AS total
             FROM locations l
-            LEFT JOIN expenses e ON e.location_id = l.id
+            LEFT JOIN expenses e ON e.location_id = l.id AND e.business_line = 'shop'
                 AND EXTRACT(YEAR FROM e.expense_date) = ? AND EXTRACT(MONTH FROM e.expense_date) = ?
             WHERE l.is_active = true
             GROUP BY l.id, l.name ORDER BY l.name

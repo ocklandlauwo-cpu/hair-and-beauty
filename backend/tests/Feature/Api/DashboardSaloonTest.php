@@ -46,3 +46,28 @@ it('a shop-tagged expense does not appear in the saloon expenses figure', functi
     $res = $this->getJson('/api/v1/dashboard')->assertOk();
     expect((float) $res->json('data.saloon.expenses.this_month'))->toBe(0.0);
 });
+
+it('shop and saloon expense totals in the same month/location do not double-count each other', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'DashSplitShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $admin = User::factory()->admin()->create();
+    Sanctum::actingAs($admin);
+
+    // A shop-tagged expense and a saloon-tagged expense, same month, same location.
+    DB::table('expenses')->insert(['location_id' => $shopId, 'category' => 'rent', 'amount' => 6000, 'business_line' => 'shop', 'expense_date' => today(), 'recorded_by' => $admin->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('expenses')->insert(['location_id' => $shopId, 'category' => 'rent', 'amount' => 3000, 'business_line' => 'saloon', 'expense_date' => today(), 'recorded_by' => $admin->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $res = $this->getJson('/api/v1/dashboard')->assertOk();
+
+    // Store section must include ONLY the shop-tagged expense.
+    expect($res->json('data.expenses.this_month'))->toBe('6000.00');
+    $storeByShop = collect($res->json('data.expenses.this_month_by_shop'))->firstWhere('location_id', $shopId);
+    expect($storeByShop['total'])->toBe('6000.00');
+
+    // Saloon section must include ONLY the saloon-tagged expense.
+    expect($res->json('data.saloon.expenses.this_month'))->toBe('3000.00');
+    $saloonByShop = collect($res->json('data.saloon.expenses.this_month_by_shop'))->firstWhere('location_id', $shopId);
+    expect($saloonByShop['total'])->toBe('3000.00');
+
+    // The two figures must not sum to double the total (9000), each must equal its own tagged amount.
+    expect((float) $res->json('data.expenses.this_month') + (float) $res->json('data.saloon.expenses.this_month'))->toBe(9000.0);
+});
