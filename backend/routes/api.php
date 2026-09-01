@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\RevertSaleController;
 use App\Http\Controllers\Api\V1\SaleController;
 use App\Http\Controllers\Api\V1\SaloonSaleController;
 use App\Http\Controllers\Api\V1\SaloonServiceController;
+use App\Http\Controllers\Api\V1\SaloonToolController;
 use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\TopClientsController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -92,6 +93,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::apiResource('/providers', ProviderController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('/saloon-services', SaloonServiceController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('/saloon-sales', [SaloonSaleController::class, 'index'])->name('saloon-sales.index');
+        Route::get('/saloon-tools', [SaloonToolController::class, 'index'])->name('saloon-tools.index');
 
         // Reconciliation & User Management
         Route::apiResource('/reconciliations', ReconciliationController::class)->only(['index']);
@@ -111,6 +113,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
             Route::post('/asked-products', [AskedProductController::class, 'store'])->name('asked-products.store');
             Route::post('/saloon-sales', [SaloonSaleController::class, 'store'])->name('saloon-sales.store');
+            Route::post('/saloon-tools', [SaloonToolController::class, 'store'])->name('saloon-tools.store');
         });
 
         // News / Announcements
