@@ -142,6 +142,65 @@ class DashboardController extends Controller
             GROUP BY l.id, l.name ORDER BY l.name
         ");
 
+        // ── Saloon Center ───────────────────────────────────────────────
+        $saloonSalesToday = (float) DB::table('saloon_sales')->whereDate('sale_date', today())->sum('amount');
+        $saloonSalesMonth = (float) DB::table('saloon_sales')->whereYear('sale_date', $year)->whereMonth('sale_date', $month)->sum('amount');
+        $saloonExpensesMonth = (float) DB::table('expenses')
+            ->where('business_line', 'saloon')
+            ->whereYear('expense_date', $year)->whereMonth('expense_date', $month)
+            ->sum('amount');
+
+        $saloonSalesTodayByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(ss.amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN saloon_sales ss ON ss.location_id = l.id AND ss.sale_date::date = CURRENT_DATE
+            WHERE l.type = 'shop' AND l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ");
+
+        $saloonSalesMonthByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(ss.amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN saloon_sales ss ON ss.location_id = l.id
+                AND EXTRACT(YEAR FROM ss.sale_date) = ? AND EXTRACT(MONTH FROM ss.sale_date) = ?
+            WHERE l.type = 'shop' AND l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ", [$year, $month]);
+
+        $saloonExpensesMonthByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(e.amount), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN expenses e ON e.location_id = l.id AND e.business_line = 'saloon'
+                AND EXTRACT(YEAR FROM e.expense_date) = ? AND EXTRACT(MONTH FROM e.expense_date) = ?
+            WHERE l.type = 'shop' AND l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ", [$year, $month]);
+
+        $saloonAssetValue = (float) DB::table('saloon_tools as st')
+            ->join('locations as l', 'l.id', '=', 'st.location_id')
+            ->where('l.type', 'shop')->where('l.is_active', true)
+            ->selectRaw('COALESCE(SUM(st.quantity * st.unit_cost), 0) as total')
+            ->value('total');
+
+        $saloonAssetValueByShop = DB::select("
+            SELECT l.id AS location_id, l.name AS location_name,
+                   COALESCE(SUM(st.quantity * st.unit_cost), 0)::numeric AS total
+            FROM locations l
+            LEFT JOIN saloon_tools st ON st.location_id = l.id
+            WHERE l.type = 'shop' AND l.is_active = true
+            GROUP BY l.id, l.name ORDER BY l.name
+        ");
+
+        $saloonProfitTodayByShop = collect($saloonSalesTodayByShop)->map(fn ($row) => (object) [
+            'location_id' => $row->location_id, 'location_name' => $row->location_name, 'total' => (float) $row->total * 0.75,
+        ]);
+        $saloonProfitMonthByShop = collect($saloonSalesMonthByShop)->map(fn ($row) => (object) [
+            'location_id' => $row->location_id, 'location_name' => $row->location_name, 'total' => (float) $row->total * 0.75,
+        ]);
+
         $fmt = fn (float $v) => number_format($v, 2, '.', '');
 
         $fmtShop = fn ($row) => [
@@ -175,6 +234,28 @@ class DashboardController extends Controller
             'store_asset_value' => [
                 'total'       => $fmt($storeAssetValue),
                 'by_location' => collect($storeAssetValueByLocation)->map($fmtShop)->values(),
+            ],
+            'saloon' => [
+                'sales' => [
+                    'today'              => $fmt($saloonSalesToday),
+                    'today_by_shop'      => collect($saloonSalesTodayByShop)->map($fmtShop)->values(),
+                    'this_month'         => $fmt($saloonSalesMonth),
+                    'this_month_by_shop' => collect($saloonSalesMonthByShop)->map($fmtShop)->values(),
+                ],
+                'profit' => [
+                    'today'              => $fmt($saloonSalesToday * 0.75),
+                    'today_by_shop'      => $saloonProfitTodayByShop->map($fmtShop)->values(),
+                    'this_month'         => $fmt($saloonSalesMonth * 0.75),
+                    'this_month_by_shop' => $saloonProfitMonthByShop->map($fmtShop)->values(),
+                ],
+                'expenses' => [
+                    'this_month'         => $fmt($saloonExpensesMonth),
+                    'this_month_by_shop' => collect($saloonExpensesMonthByShop)->map($fmtShop)->values(),
+                ],
+                'asset_value' => [
+                    'total'   => $fmt($saloonAssetValue),
+                    'by_shop' => collect($saloonAssetValueByShop)->map($fmtShop)->values(),
+                ],
             ],
             'distributions' => ['pending' => (int) $pendingDist],
             'stock' => [
