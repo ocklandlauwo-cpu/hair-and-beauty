@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { saloonToolsApi } from '@/api/saloonTools'
+import { saloonToolsApi, type SaloonTool } from '@/api/saloonTools'
 import { locationsApi } from '@/api/locations'
 import DataTable from '@/components/ui/DataTable'
 
@@ -71,12 +71,12 @@ export default function SaloonToolsPage() {
   const activeShops = (locationsData ?? []).filter(l => l.type === 'shop' && l.is_active)
 
   const columns = [
-    { key: 'purchase_date', header: 'Date', render: (t: { purchase_date: string }) => new Date(t.purchase_date).toLocaleDateString() },
+    { key: 'purchase_date', header: 'Date', render: (t: SaloonTool) => new Date(t.purchase_date).toLocaleDateString() },
     { key: 'location_name', header: 'Shop' },
     { key: 'name', header: 'Item' },
     { key: 'quantity', header: 'Quantity' },
-    { key: 'unit_cost', header: 'Unit Cost (TZS)', render: (t: { unit_cost: string }) => fmt(t.unit_cost) },
-    { key: 'total', header: 'Total (TZS)', render: (t: { total: number }) => fmt(t.total) },
+    { key: 'unit_cost', header: 'Unit Cost (TZS)', render: (t: SaloonTool) => fmt(t.unit_cost) },
+    { key: 'total', header: 'Total (TZS)', render: (t: SaloonTool) => fmt(t.total) },
   ]
 
   return (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus } from 'lucide-react'
-import { saloonSalesApi } from '@/api/saloonSales'
+import { saloonSalesApi, type SaloonSale } from '@/api/saloonSales'
 import { providersApi } from '@/api/providers'
 import { saloonServicesApi } from '@/api/saloonServices'
 import { locationsApi } from '@/api/locations'
@@ -163,10 +163,10 @@ export default function SaloonCenterPage() {
   })
 
   const columns = [
-    { key: 'sale_date', header: 'Date', render: (s: { sale_date: string }) => new Date(s.sale_date).toLocaleDateString() },
+    { key: 'sale_date', header: 'Date', render: (s: SaloonSale) => new Date(s.sale_date).toLocaleDateString() },
     { key: 'provider_name', header: 'Provider' },
     { key: 'service_name', header: 'Service' },
-    { key: 'amount', header: 'Amount (TZS)', render: (s: { amount: string }) => fmt(s.amount), className: 'text-right' },
+    { key: 'amount', header: 'Amount (TZS)', render: (s: SaloonSale) => fmt(s.amount), className: 'text-right' },
     { key: 'location_name', header: 'Shop' },
   ]
 

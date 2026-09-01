@@ -4,10 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/contexts/AuthContext'
 import SaloonCenterPage from './SaloonCenterPage'
-import { saloonSalesApi } from '@/api/saloonSales'
-import { providersApi } from '@/api/providers'
-import { saloonServicesApi } from '@/api/saloonServices'
-import { locationsApi } from '@/api/locations'
 import type { User } from '@/types'
 
 // AuthProvider defaults to unauthenticated (no "Log Sale" button would render) unless

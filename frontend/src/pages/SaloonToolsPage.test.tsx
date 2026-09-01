@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import SaloonToolsPage from './SaloonToolsPage'
 import { saloonToolsApi } from '@/api/saloonTools'
-import { locationsApi } from '@/api/locations'
 
 vi.mock('@/api/saloonTools', () => ({
   saloonToolsApi: {
