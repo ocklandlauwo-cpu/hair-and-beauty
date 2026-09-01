@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 
 class ExpenseController extends Controller
 {
-    private const FIELDS = ['id', 'location_id', 'category', 'amount', 'expense_date', 'recorded_by', 'notes'];
+    private const FIELDS = ['id', 'location_id', 'category', 'amount', 'expense_date', 'recorded_by', 'notes', 'business_line'];
 
     public function index(): JsonResponse
     {
@@ -51,6 +51,7 @@ class ExpenseController extends Controller
             'expense_date' => $validated['expense_date'],
             'recorded_by' => $user->id,
             'notes' => $validated['notes'] ?? null,
+            'business_line' => $validated['business_line'] ?? 'shop',
         ]);
 
         return response()->json(['data' => array_merge(

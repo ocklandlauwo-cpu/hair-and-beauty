@@ -94,3 +94,44 @@ it('admin can list all expenses', function () {
 
     $this->getJson('/api/v1/expenses')->assertOk()->assertJsonStructure(['data', 'meta']);
 });
+
+it('an expense defaults to business_line shop when not specified', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'BLDefaultShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    Sanctum::actingAs(User::factory()->seller()->create(['location_id' => $shopId]));
+    $locationIdsJson = json_encode([$shopId]);
+    DB::statement("SELECT set_config('app.role', 'seller', false)");
+    DB::statement("SELECT set_config('app.location_ids', '{$locationIdsJson}', false)");
+
+    try {
+        $this->postJson('/api/v1/expenses', [
+            'category' => 'rent', 'amount' => 10000, 'expense_date' => today()->toDateString(),
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.business_line', 'shop');
+    } finally {
+        DB::unprepared('RESET app.role');
+        DB::unprepared('RESET app.location_ids');
+    }
+});
+
+it('an expense can be explicitly tagged as saloon business_line', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'BLSaloonShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson('/api/v1/expenses', [
+        'category' => 'rent', 'amount' => 10000, 'expense_date' => today()->toDateString(),
+        'location_id' => $shopId, 'business_line' => 'saloon',
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.business_line', 'saloon');
+});
+
+it('rejects an invalid business_line value', function () {
+    $shopId = DB::table('locations')->insertGetId(['name' => 'BLInvalidShop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson('/api/v1/expenses', [
+        'category' => 'rent', 'amount' => 10000, 'expense_date' => today()->toDateString(),
+        'location_id' => $shopId, 'business_line' => 'not_a_real_line',
+    ])->assertStatus(422);
+});

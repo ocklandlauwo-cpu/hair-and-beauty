@@ -9,7 +9,7 @@ class Expense extends Model
 {
     protected $fillable = [
         'location_id', 'category', 'amount',
-        'expense_date', 'recorded_by', 'notes',
+        'expense_date', 'recorded_by', 'notes', 'business_line',
     ];
 
     protected function casts(): array

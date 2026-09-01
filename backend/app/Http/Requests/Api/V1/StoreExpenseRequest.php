@@ -19,6 +19,7 @@ class StoreExpenseRequest extends FormRequest
             'expense_date' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],
+            'business_line' => ['nullable', 'in:shop,saloon'],
         ];
     }
 }
