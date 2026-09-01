@@ -32,6 +32,28 @@ export interface AdminDashboard {
     total: string
     by_location: ShopBreakdown[]
   }
+  saloon: {
+    sales: {
+      today: string
+      today_by_shop: ShopBreakdown[]
+      this_month: string
+      this_month_by_shop: ShopBreakdown[]
+    }
+    profit: {
+      today: string
+      today_by_shop: ShopBreakdown[]
+      this_month: string
+      this_month_by_shop: ShopBreakdown[]
+    }
+    expenses: {
+      this_month: string
+      this_month_by_shop: ShopBreakdown[]
+    }
+    asset_value: {
+      total: string
+      by_shop: ShopBreakdown[]
+    }
+  }
   distributions: { pending: number }
   stock: { expiry_alerts: number; low_stock_alerts: number }
   users: { active: number }

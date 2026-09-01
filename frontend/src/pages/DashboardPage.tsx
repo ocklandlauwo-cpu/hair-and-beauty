@@ -136,6 +136,42 @@ export default function DashboardPage() {
             <StatCard label="Low Stock Alerts" value={dashData.stock.low_stock_alerts} sub="< 30 days cover" />
           </div>
 
+          <h2 className="mt-2 text-sm font-semibold text-gray-700">Saloon Center</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <BreakdownCard
+              label="Sales Today"
+              total={dashData.saloon.sales.today}
+              shops={dashData.saloon.sales.today_by_shop}
+            />
+            <BreakdownCard
+              label="Sales This Month"
+              total={dashData.saloon.sales.this_month}
+              shops={dashData.saloon.sales.this_month_by_shop}
+            />
+            <BreakdownCard
+              label="Profit Today"
+              total={dashData.saloon.profit.today}
+              shops={dashData.saloon.profit.today_by_shop}
+              colorNegative
+            />
+            <BreakdownCard
+              label="Profit This Month"
+              total={dashData.saloon.profit.this_month}
+              shops={dashData.saloon.profit.this_month_by_shop}
+              colorNegative
+            />
+            <BreakdownCard
+              label="Expenses This Month"
+              total={dashData.saloon.expenses.this_month}
+              shops={dashData.saloon.expenses.this_month_by_shop}
+            />
+            <BreakdownCard
+              label="Asset Value"
+              total={dashData.saloon.asset_value.total}
+              shops={dashData.saloon.asset_value.by_shop}
+            />
+          </div>
+
         </div>
       )}
 
