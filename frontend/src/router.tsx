@@ -8,6 +8,7 @@ import ProductsPage from '@/pages/ProductsPage'
 import StockPage from '@/pages/StockPage'
 import StockMovementHistoryPage from '@/pages/stock/StockMovementHistoryPage'
 import DistributionsPage from '@/pages/DistributionsPage'
+import SalesReportPage from '@/pages/SalesReportPage'
 import CreateDistributionPage from '@/pages/distributions/CreateDistributionPage'
 import ConfirmDistributionPage from '@/pages/distributions/ConfirmDistributionPage'
 import SalesPage from '@/pages/SalesPage'
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
               { path: 'saloon-services', element: <SaloonServicesPage /> },
               { path: 'saloon-tools', element: <SaloonToolsPage /> },
               { path: 'graphical-view', element: <GraphicalViewPage /> },
+              { path: 'reports/sales', element: <SalesReportPage /> },
               { path: 'products/new', element: <ProductFormPage /> },
               { path: 'products/:id/edit', element: <ProductFormPage /> },
               { path: 'ai-reports/slow-products',    element: <SlowProductsPage /> },

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ChartController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
+use App\Http\Controllers\Api\V1\BankController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ClientController;
@@ -115,6 +116,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('/asked-products', [AskedProductController::class, 'store'])->name('asked-products.store');
             Route::post('/saloon-sales', [SaloonSaleController::class, 'store'])->name('saloon-sales.store');
             Route::post('/saloon-tools', [SaloonToolController::class, 'store'])->name('saloon-tools.store');
+            Route::post('/bank-deposits', [BankController::class, 'storeDeposit'])->name('bank-deposits.store');
+            Route::post('/bank-withdrawals', [BankController::class, 'storeWithdrawal'])->name('bank-withdrawals.store');
         });
 
         // News / Announcements
@@ -126,7 +129,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Reports
         Route::get('/reports/pnl', [PnlController::class, 'index'])->name('reports.pnl');
+        Route::get('/reports/sales', [BankController::class, 'salesReport'])->name('reports.sales');
         Route::get('/reports/weekly', [ReportController::class, 'weekly'])->name('reports.weekly');
+
+        // Bank
+        Route::get('/bank/summary', [BankController::class, 'summary'])->name('bank.summary');
+        Route::delete('/bank-deposits/{bankDeposit}', [BankController::class, 'destroyDeposit'])->name('bank-deposits.destroy');
         Route::get('/reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
 
         // Charts

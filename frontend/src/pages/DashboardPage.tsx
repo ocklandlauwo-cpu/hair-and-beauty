@@ -4,6 +4,7 @@ import { dashboardApi, type ShopBreakdown } from '@/api/dashboard'
 import { newsApi } from '@/api/news'
 import { useAuth } from '@/contexts/AuthContext'
 import StatCard from '@/components/ui/StatCard'
+import BankDetailsCard from '@/components/BankDetailsCard'
 
 function fmtTzs(value: string | number) {
   return `TZS ${Number(value).toLocaleString('en-US')}`
@@ -93,6 +94,8 @@ export default function DashboardPage() {
       {/* ── Admin dashboard ─────────────────────────────────────────── */}
       {dashData?.role === 'admin' && (
         <div className="space-y-4">
+          <BankDetailsCard />
+
           {/* Sales + Profit breakdown cards (2 col) */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <BreakdownCard

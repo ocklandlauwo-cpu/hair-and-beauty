@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\AskedProduct;
+use App\Models\BankDeposit;
+use App\Models\BankWithdrawal;
 use App\Models\Client;
 use App\Models\Distribution;
 use App\Models\Expense;
@@ -17,6 +19,7 @@ use App\Models\SaloonService;
 use App\Models\SaloonTool;
 use App\Models\User;
 use App\Policies\AskedProductPolicy;
+use App\Policies\BankPolicy;
 use App\Policies\ClientPolicy;
 use App\Policies\DistributionPolicy;
 use App\Policies\ExpensePolicy;
@@ -62,5 +65,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SaloonService::class, SaloonServicePolicy::class);
         Gate::policy(SaloonSale::class, SaloonSalePolicy::class);
         Gate::policy(SaloonTool::class, SaloonToolPolicy::class);
+        Gate::policy(BankDeposit::class, BankPolicy::class);
+        Gate::policy(BankWithdrawal::class, BankPolicy::class);
     }
 }

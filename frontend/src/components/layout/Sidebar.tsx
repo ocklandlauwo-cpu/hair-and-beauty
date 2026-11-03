@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Boxes, Truck, ShoppingCart, CreditCard, FileText,
   Users, TrendingUp, ClipboardCheck, Clock, Receipt, UserRound, Tag, BarChart2,
   BrainCircuit, TrendingDown, ChevronDown, Trophy, Zap, Settings, RefreshCw,
-  FileBarChart, Scissors,
+  FileBarChart, Scissors, Landmark,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -85,6 +85,7 @@ const allEntries: TopLevelEntry[] = [
     children: [
       { kind: 'link', to: '/graphical-view', label: 'Graphical View', icon: BarChart2 },
       { kind: 'link', to: '/reports/pnl',    label: 'P&L Report',     icon: TrendingUp },
+      { kind: 'link', to: '/reports/sales',  label: 'Sales Report',   icon: Landmark },
       {
         kind: 'group',
         label: 'AI - Report',
