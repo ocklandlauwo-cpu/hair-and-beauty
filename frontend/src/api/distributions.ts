@@ -61,8 +61,8 @@ export interface PendingDistribution {
 export const distributionsApi = {
   pending: () =>
     api.get<{ count: number; data: PendingDistribution[] }>('/distributions/pending'),
-  list: (page = 1) =>
-    api.get<PaginatedResponse<Distribution>>('/distributions', { params: { page } }),
+  list: (page = 1, status?: Distribution['status']) =>
+    api.get<PaginatedResponse<Distribution>>('/distributions', { params: { page, status } }),
   show: (id: number) =>
     api.get<ApiResponse<DistributionDetail>>(`/distributions/${id}`),
   create: (data: CreateDistributionPayload) =>

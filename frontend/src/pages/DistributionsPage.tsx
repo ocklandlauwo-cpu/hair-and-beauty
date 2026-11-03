@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Plus, Search, History, ArrowLeftRight } from 'lucide-react'
 import { distributionsApi, type Distribution, type DistributionDetail, type SuggestedMovement } from '@/api/distributions'
@@ -113,9 +113,27 @@ export default function DistributionsPage() {
   const [cancelId, setCancelId] = useState<number | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusParam = searchParams.get('status')
+  const statusFilter = statusParam && statusParam in statusVariant ? statusParam as Distribution['status'] : undefined
+
+  // Arriving via a status link (e.g. the header bell) should land on the History tab
+  useEffect(() => {
+    if (statusParam) setTab('history')
+  }, [statusParam])
+
+  const setStatusFilter = (status: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (status) next.set('status', status)
+      else next.delete('status')
+      return next
+    }, { replace: true })
+  }
+
   const { data, isLoading } = useQuery({
-    queryKey: ['distributions'],
-    queryFn: () => distributionsApi.list().then(r => r.data),
+    queryKey: ['distributions', 'list', statusFilter ?? 'all'],
+    queryFn: () => distributionsApi.list(1, statusFilter).then(r => r.data),
   })
 
   const revertMutation = useMutation({
@@ -187,16 +205,29 @@ export default function DistributionsPage() {
 
       {tab === 'history' && (
       <>
-      {/* Shop search */}
-      <div className="relative max-w-xs">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search shop…"
-          value={shopSearch}
-          onChange={e => setShopSearch(e.target.value)}
-          className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
-        />
+      {/* Shop search + status filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search shop…"
+            value={shopSearch}
+            onChange={e => setShopSearch(e.target.value)}
+            className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600"
+          />
+        </div>
+        <select
+          value={statusFilter ?? ''}
+          onChange={e => setStatusFilter(e.target.value)}
+          aria-label="Filter by status"
+          className="h-9 rounded-md border border-gray-300 px-3 text-sm capitalize focus:outline-none focus:ring-1 focus:ring-primary-600"
+        >
+          <option value="">All statuses</option>
+          {Object.keys(statusVariant).map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       {isLoading ? (

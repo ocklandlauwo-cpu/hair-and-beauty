@@ -174,3 +174,18 @@ it('pending endpoint returns only the seller\'s own shop pending distributions',
     Sanctum::actingAs($f['sk']);
     expect($this->getJson('/api/v1/distributions/pending')->json('count'))->toBeGreaterThanOrEqual(3);
 });
+
+it('index filters by status when requested', function () {
+    $f = distFixtures();
+    Sanctum::actingAs($f['sk']);
+
+    $this->postJson('/api/v1/distributions', [
+        'to_location_id' => $f['shopId'],
+        'distributed_at' => now()->toIso8601String(),
+        'items' => [['product_id' => $f['prodId'], 'quantity_sent' => 2]],
+    ])->assertCreated();
+    DB::table('distributions')->insert(['from_location_id' => $f['storeId'], 'to_location_id' => $f['shopId'], 'distributed_by' => $f['sk']->id, 'status' => 'confirmed', 'distributed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+
+    $statuses = collect($this->getJson('/api/v1/distributions?status=pending')->assertOk()->json('data'))->pluck('status')->unique()->values()->all();
+    expect($statuses)->toBe(['pending']);
+});

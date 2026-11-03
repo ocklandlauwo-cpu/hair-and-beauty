@@ -9,6 +9,7 @@ use App\Models\DistributionItem;
 use App\Models\Location;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DistributionController extends Controller
@@ -16,10 +17,14 @@ class DistributionController extends Controller
     private const FIELDS = ['id', 'from_location_id', 'to_location_id', 'distributed_by',
         'confirmed_by', 'status', 'distributed_at', 'confirmed_at', 'notes'];
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Distribution::class);
-        $distributions = Distribution::with('toLocation')->latest()->paginate(50);
+        $status = $request->query('status');
+        $distributions = Distribution::with('toLocation')
+            ->when(in_array($status, ['pending', 'confirmed', 'discrepancy', 'cancelled'], true), fn ($q) => $q->where('status', $status))
+            ->latest()
+            ->paginate(50);
 
         return response()->json($distributions->through(fn ($d) => array_merge(
             $d->only(self::FIELDS),

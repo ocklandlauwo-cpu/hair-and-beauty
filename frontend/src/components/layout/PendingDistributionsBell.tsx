@@ -76,11 +76,11 @@ export default function PendingDistributionsBell() {
             </ul>
           )}
           <Link
-            to="/distributions"
+            to="/distributions?status=pending"
             onClick={() => setOpen(false)}
             className="block border-t border-warm-100 px-4 py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-warm-50"
           >
-            View all distributions
+            View pending distributions
           </Link>
         </div>
       )}
