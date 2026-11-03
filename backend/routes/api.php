@@ -78,6 +78,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
         // Distribution
         Route::get('/distributions/suggested-movements', [DistributionController::class, 'suggestedMovements'])->name('distributions.suggested-movements');
+        Route::get('/distributions/pending', [DistributionController::class, 'pending'])->name('distributions.pending');
         Route::apiResource('/distributions', DistributionController::class)->only(['index', 'show']);
         Route::post('/distributions/{distribution}/confirm', ConfirmDistributionController::class)->name('distributions.confirm');
         Route::post('/distributions/{distribution}/revert', RevertDistributionController::class)->name('distributions.revert');

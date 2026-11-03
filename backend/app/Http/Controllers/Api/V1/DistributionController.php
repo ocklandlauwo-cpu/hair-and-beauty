@@ -27,6 +27,29 @@ class DistributionController extends Controller
         )));
     }
 
+    public function pending(): JsonResponse
+    {
+        $this->authorize('viewAny', Distribution::class);
+        $user = auth()->user();
+
+        $pending = Distribution::with('toLocation')
+            ->withCount('items')
+            ->where('status', 'pending')
+            ->when($user->role === 'seller', fn ($q) => $q->where('to_location_id', $user->location_id))
+            ->orderBy('distributed_at')
+            ->get();
+
+        return response()->json([
+            'count' => $pending->count(),
+            'data'  => $pending->map(fn ($d) => [
+                'id'               => $d->id,
+                'to_location_name' => $d->toLocation?->name,
+                'distributed_at'   => $d->distributed_at,
+                'items_count'      => $d->items_count,
+            ]),
+        ]);
+    }
+
     public function show(Distribution $distribution): JsonResponse
     {
         $this->authorize('viewAny', Distribution::class);

@@ -151,3 +151,26 @@ it('shop-to-shop distribution rejects quantity exceeding source stock', function
 
     expect($outMovement)->toBeNull();
 });
+
+it('pending endpoint returns only the seller\'s own shop pending distributions', function () {
+    $f = distFixtures();
+    $otherShopId = DB::table('locations')->insertGetId(['name' => 'Shop'.uniqid(), 'type' => 'shop', 'geofence_radius_m' => 100, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+    Sanctum::actingAs($f['sk']);
+    foreach ([$f['shopId'], $f['shopId'], $otherShopId] as $i => $to) {
+        $this->postJson('/api/v1/distributions', [
+            'to_location_id' => $to,
+            'distributed_at' => now()->toIso8601String(),
+            'items' => [['product_id' => $f['prodId'], 'quantity_sent' => $i + 1]],
+        ])->assertCreated();
+    }
+
+    Sanctum::actingAs($f['seller']);
+    $this->getJson('/api/v1/distributions/pending')
+        ->assertOk()
+        ->assertJsonPath('count', 2)
+        ->assertJsonPath('data.0.items_count', 1);
+
+    Sanctum::actingAs($f['sk']);
+    expect($this->getJson('/api/v1/distributions/pending')->json('count'))->toBeGreaterThanOrEqual(3);
+});

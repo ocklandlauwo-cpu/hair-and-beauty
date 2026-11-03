@@ -2,6 +2,7 @@ import { LogOut, Menu } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/api/auth'
+import PendingDistributionsBell from './PendingDistributionsBell'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -28,6 +29,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </button>
 
       <div className="flex flex-1 items-center justify-end gap-3 min-w-0">
+        {user && <PendingDistributionsBell />}
         {user && (
           <div className="flex items-center gap-2 min-w-0">
             <span className="hidden sm:block text-sm font-medium text-gray-700 truncate">{user.name}</span>

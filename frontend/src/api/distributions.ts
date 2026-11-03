@@ -51,7 +51,16 @@ export interface SuggestedMovement {
   suggested_qty: number
 }
 
+export interface PendingDistribution {
+  id: number
+  to_location_name: string | null
+  distributed_at: string
+  items_count: number
+}
+
 export const distributionsApi = {
+  pending: () =>
+    api.get<{ count: number; data: PendingDistribution[] }>('/distributions/pending'),
   list: (page = 1) =>
     api.get<PaginatedResponse<Distribution>>('/distributions', { params: { page } }),
   show: (id: number) =>
