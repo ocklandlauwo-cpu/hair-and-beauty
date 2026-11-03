@@ -8,6 +8,8 @@ export interface BankDepositInfo {
   verified_by_name: string | null
 }
 
+export type DepositChannel = 'cash' | 'nmb' | 'mobile'
+
 export interface DailySalesRow {
   sale_date: string
   location_id: number
@@ -17,7 +19,7 @@ export interface DailySalesRow {
   nmb: string
   mobile: string
   total: string
-  deposit: BankDepositInfo | null
+  deposits: Record<DepositChannel, BankDepositInfo | null>
 }
 
 export interface BankWithdrawal {
@@ -37,7 +39,7 @@ export interface BankSummary {
 export const bankApi = {
   salesReport: (params: { from: string; to: string; location_id?: number | '' }) =>
     api.get<{ data: DailySalesRow[] }>('/reports/sales', { params }),
-  verifyDeposit: (data: { location_id: number; deposit_date: string; slip_reference?: string }) =>
+  verifyDeposit: (data: { location_id: number; deposit_date: string; channel: DepositChannel; slip_reference?: string }) =>
     api.post<{ data: { id: number; amount: string } }>('/bank-deposits', data),
   unverifyDeposit: (id: number) =>
     api.delete(`/bank-deposits/${id}`),

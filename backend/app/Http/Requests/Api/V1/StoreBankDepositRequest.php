@@ -17,6 +17,7 @@ class StoreBankDepositRequest extends FormRequest
         return [
             'location_id'    => ['required', 'integer', Rule::exists('locations', 'id')->where('type', 'shop')],
             'deposit_date'   => ['required', 'date', 'before_or_equal:today'],
+            'channel'        => ['required', Rule::in(['cash', 'nmb', 'mobile'])],
             'slip_reference' => ['nullable', 'string', 'max:100'],
         ];
     }

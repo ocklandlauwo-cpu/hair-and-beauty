@@ -7,7 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BankDeposit extends Model
 {
-    protected $fillable = ['location_id', 'deposit_date', 'amount', 'slip_reference', 'verified_by', 'verified_at'];
+    /** Payment-method groups that make up each deposit channel. */
+    public const CHANNEL_METHODS = [
+        'cash'   => ['cash'],
+        'nmb'    => ['nmb'],
+        'mobile' => ['airtel', 'vodacom', 'tigo'],
+    ];
+
+    protected $fillable = ['location_id', 'deposit_date', 'channel', 'amount', 'slip_reference', 'verified_by', 'verified_at'];
 
     protected function casts(): array
     {

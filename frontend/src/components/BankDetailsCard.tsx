@@ -57,7 +57,7 @@ export default function BankDetailsCard() {
         <div>
           <p className="text-xs text-gray-500">Money In</p>
           <p className="mt-1 text-lg font-bold text-green-700">{fmtTzs(data?.money_in ?? 0)}</p>
-          <p className="text-xs text-gray-400">verified cash deposits</p>
+          <p className="text-xs text-gray-400">verified cash, NMB &amp; mobile money</p>
         </div>
         <div>
           <p className="text-xs text-gray-500">Money Out</p>

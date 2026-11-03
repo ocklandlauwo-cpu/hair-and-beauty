@@ -36,7 +36,7 @@ it('sales report splits a shop day by payment method and excludes reverted sales
         ->assertJsonPath('data.0.nmb', '7000.00')
         ->assertJsonPath('data.0.mobile', '3000.00')
         ->assertJsonPath('data.0.total', '25000.00')
-        ->assertJsonPath('data.0.deposit', null);
+        ->assertJsonPath('data.0.deposits', ['cash' => null, 'nmb' => null, 'mobile' => null]);
 });
 
 it('verifying a deposit snapshots the cash total, shows on the report, and counts as money in', function () {
@@ -45,12 +45,12 @@ it('verifying a deposit snapshots the cash total, shows on the report, and count
     $before = (float) $this->getJson('/api/v1/bank/summary')->json('data.money_in');
 
     $this->postJson('/api/v1/bank-deposits', [
-        'location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'slip_reference' => 'SLIP-123',
+        'location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'cash', 'slip_reference' => 'SLIP-123',
     ])->assertCreated()->assertJsonPath('data.amount', '15000.00');
 
     $this->getJson("/api/v1/reports/sales?from={$f['day']}&to={$f['day']}&location_id={$f['shopId']}")
-        ->assertJsonPath('data.0.deposit.amount', '15000.00')
-        ->assertJsonPath('data.0.deposit.slip_reference', 'SLIP-123');
+        ->assertJsonPath('data.0.deposits.cash.amount', '15000.00')
+        ->assertJsonPath('data.0.deposits.cash.slip_reference', 'SLIP-123');
 
     expect((float) $this->getJson('/api/v1/bank/summary')->json('data.money_in'))->toBe($before + 15000);
 });
@@ -58,7 +58,7 @@ it('verifying a deposit snapshots the cash total, shows on the report, and count
 it('rejects verifying the same day twice', function () {
     $f = bankFixtures();
     Sanctum::actingAs($f['admin']);
-    $payload = ['location_id' => $f['shopId'], 'deposit_date' => $f['day']];
+    $payload = ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'cash'];
 
     $this->postJson('/api/v1/bank-deposits', $payload)->assertCreated();
     $this->travel(11)->seconds(); // step past the duplicate-submission window
@@ -70,7 +70,7 @@ it('unverifying a deposit removes it from money in', function () {
     Sanctum::actingAs($f['admin']);
     $before = (float) $this->getJson('/api/v1/bank/summary')->json('data.money_in');
 
-    $id = $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day']])->json('data.id');
+    $id = $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'cash'])->json('data.id');
     $this->deleteJson("/api/v1/bank-deposits/{$id}")->assertNoContent();
 
     expect((float) $this->getJson('/api/v1/bank/summary')->json('data.money_in'))->toBe($before);
@@ -97,6 +97,24 @@ it('non-admins cannot see the sales report or touch the bank', function () {
 
     $this->getJson("/api/v1/reports/sales?from={$f['day']}&to={$f['day']}")->assertForbidden();
     $this->getJson('/api/v1/bank/summary')->assertForbidden();
-    $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day']])->assertForbidden();
+    $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'cash'])->assertForbidden();
     $this->postJson('/api/v1/bank-withdrawals', ['amount' => 1, 'withdrawal_date' => $f['day'], 'reason' => 'x'])->assertForbidden();
+});
+
+it('cash, NMB and mobile money are verified separately and all add up in money in', function () {
+    $f = bankFixtures();
+    Sanctum::actingAs($f['admin']);
+    $before = (float) $this->getJson('/api/v1/bank/summary')->json('data.money_in');
+
+    foreach (['cash' => '15000.00', 'nmb' => '7000.00', 'mobile' => '3000.00'] as $channel => $expected) {
+        $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => $channel])
+            ->assertCreated()
+            ->assertJsonPath('data.amount', $expected);
+    }
+
+    $this->getJson("/api/v1/reports/sales?from={$f['day']}&to={$f['day']}&location_id={$f['shopId']}")
+        ->assertJsonPath('data.0.deposits.nmb.amount', '7000.00')
+        ->assertJsonPath('data.0.deposits.mobile.amount', '3000.00');
+
+    expect((float) $this->getJson('/api/v1/bank/summary')->json('data.money_in'))->toBe($before + 25000);
 });
