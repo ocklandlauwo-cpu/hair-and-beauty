@@ -27,6 +27,7 @@ export interface LowStockAlert {
   product_name: string
   location_id: number
   location_name: string
+  location_type: 'store' | 'shop'
   current_stock: number
   avg_daily_sales: string
   days_of_cover: number | null

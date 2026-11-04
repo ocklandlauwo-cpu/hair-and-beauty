@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { User } from '@/types'
 
 interface AuthContextValue {
@@ -21,17 +22,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   })
 
+  const queryClient = useQueryClient()
+
+  // Cached queries belong to the signed-in user; drop them on every identity change
+  // so the next user on a shared browser never sees the previous user's data.
   const login = useCallback((token: string, newUser: User) => {
+    queryClient.clear()
     localStorage.setItem('auth_token', token)
     localStorage.setItem('auth_user', JSON.stringify(newUser))
     setUser(newUser)
-  }, [])
+  }, [queryClient])
 
   const logout = useCallback(() => {
+    queryClient.clear()
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
     setUser(null)
-  }, [])
+  }, [queryClient])
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>

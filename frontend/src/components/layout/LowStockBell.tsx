@@ -9,11 +9,14 @@ export default function LowStockBell() {
   const { user } = useAuth()
 
   // Same key as the Stock page's Low Stock tab so both share one cache entry
-  const { data = [] } = useQuery({
+  const { data: alerts } = useQuery({
     queryKey: ['stock-low'],
     queryFn: () => stockApi.lowStockAlerts().then(r => r.data.data),
     refetchInterval: 5 * 60_000,
   })
+
+  // Notifications cover shops only; the store's low stock stays on the Stock page
+  const data = useMemo(() => (alerts ?? []).filter(r => r.location_type === 'shop'), [alerts])
 
   // Per-shop counts for users who see more than one shop
   const byShop = useMemo(() => {

@@ -1,16 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './AuthContext'
 import type { User } from '@/types'
 
 const mockUser: User = { id: 1, name: 'Admin', email: 'admin@test.com', role: 'admin', location_id: null, is_active: true, created_at: '', updated_at: '' }
 
+let queryClient: QueryClient
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>{children}</AuthProvider>
+  </QueryClientProvider>
 )
 
 beforeEach(() => {
   localStorage.clear()
+  queryClient = new QueryClient()
 })
 
 describe('AuthContext', () => {
@@ -34,5 +40,18 @@ describe('AuthContext', () => {
     act(() => { result.current.logout() })
     expect(result.current.isAuthenticated).toBe(false)
     expect(localStorage.getItem('auth_token')).toBeNull()
+  })
+
+  it('logout and login clear cached queries from the previous user', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    act(() => { result.current.login('tok', mockUser) })
+
+    queryClient.setQueryData(['stock-low'], [{ product_id: 1 }])
+    act(() => { result.current.logout() })
+    expect(queryClient.getQueryData(['stock-low'])).toBeUndefined()
+
+    queryClient.setQueryData(['stock-low'], [{ product_id: 2 }])
+    act(() => { result.current.login('tok2', { ...mockUser, role: 'seller' }) })
+    expect(queryClient.getQueryData(['stock-low'])).toBeUndefined()
   })
 })
