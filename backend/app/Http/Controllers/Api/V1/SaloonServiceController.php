@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 class SaloonServiceController extends Controller
 {
-    private const FIELDS = ['id', 'name', 'is_active'];
+    private const FIELDS = ['id', 'name', 'uses_product', 'is_active'];
 
     public function index(): JsonResponse
     {

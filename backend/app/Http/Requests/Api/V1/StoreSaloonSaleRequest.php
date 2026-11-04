@@ -22,6 +22,9 @@ class StoreSaloonSaleRequest extends FormRequest
                 : ['nullable', 'integer'],
             'provider_id'       => ['required', 'integer', 'exists:providers,id'],
             'saloon_service_id' => ['required', 'integer', 'exists:saloon_services,id'],
+            // Optional product used (only kept for services with uses_product); never affects stock
+            'product_id'        => ['nullable', 'integer', 'exists:products,id'],
+            'product_quantity'  => ['nullable', 'required_with:product_id', 'integer', 'min:1'],
             'amount'            => ['required', 'numeric', 'min:0.01'],
             'sale_date'         => ['required', 'date'],
         ];

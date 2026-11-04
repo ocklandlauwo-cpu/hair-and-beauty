@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreSaloonSaleRequest;
 use App\Models\SaloonSale;
+use App\Models\SaloonService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,9 +17,11 @@ class SaloonSaleController extends Controller
             'id'            => $sale->id,
             'sale_date'     => $sale->sale_date->format('Y-m-d'),
             'provider_name' => $sale->provider?->name ?? '—',
-            'service_name'  => $sale->service?->name ?? '—',
-            'amount'        => $sale->amount,
-            'location_name' => $sale->location?->name ?? '—',
+            'service_name'     => $sale->service?->name ?? '—',
+            'product_name'     => $sale->product?->name,
+            'product_quantity' => $sale->product_quantity,
+            'amount'           => $sale->amount,
+            'location_name'    => $sale->location?->name ?? '—',
         ];
     }
 
@@ -29,7 +32,7 @@ class SaloonSaleController extends Controller
         $dateFrom = $request->query('date_from', now()->startOfMonth()->toDateString());
         $dateTo   = $request->query('date_to',   now()->toDateString());
 
-        $sales = SaloonSale::with(['location:id,name', 'provider:id,name', 'service:id,name'])
+        $sales = SaloonSale::with(['location:id,name', 'provider:id,name', 'service:id,name', 'product:id,name'])
             ->when($request->query('location_id'), fn ($q, $v) => $q->where('location_id', $v))
             ->whereDate('sale_date', '>=', $dateFrom)
             ->whereDate('sale_date', '<=', $dateTo)
@@ -59,16 +62,21 @@ class SaloonSaleController extends Controller
             ? $validated['location_id']
             : $user->location_id;
 
+        $usesProduct = SaloonService::whereKey($validated['saloon_service_id'])->value('uses_product');
+        $productId = $usesProduct ? ($validated['product_id'] ?? null) : null;
+
         $sale = SaloonSale::create([
             'location_id'       => $locationId,
             'provider_id'       => $validated['provider_id'],
             'saloon_service_id' => $validated['saloon_service_id'],
+            'product_id'        => $productId,
+            'product_quantity'  => $productId ? $validated['product_quantity'] : null,
             'amount'            => $validated['amount'],
             'sale_date'         => $validated['sale_date'],
             'created_by'        => $user->id,
         ]);
 
-        $sale->load(['location:id,name', 'provider:id,name', 'service:id,name']);
+        $sale->load(['location:id,name', 'provider:id,name', 'service:id,name', 'product:id,name']);
 
         return response()->json(['data' => $this->present($sale)], 201);
     }

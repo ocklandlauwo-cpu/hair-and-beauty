@@ -15,7 +15,8 @@ class UpdateSaloonServiceRequest extends FormRequest
     {
         return [
             'name'      => ['sometimes', 'required', 'string', 'max:100'],
-            'is_active' => ['sometimes', 'boolean'],
+            'is_active'    => ['sometimes', 'boolean'],
+            'uses_product' => ['sometimes', 'boolean'],
         ];
     }
 }

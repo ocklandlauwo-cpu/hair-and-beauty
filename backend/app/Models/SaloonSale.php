@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SaloonSale extends Model
 {
-    protected $fillable = ['location_id', 'provider_id', 'saloon_service_id', 'amount', 'sale_date', 'created_by'];
+    protected $fillable = ['location_id', 'provider_id', 'saloon_service_id', 'product_id', 'product_quantity', 'amount', 'sale_date', 'created_by'];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            'product_quantity' => 'integer',
             'sale_date' => 'date',
         ];
     }
@@ -30,5 +31,10 @@ class SaloonSale extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(SaloonService::class, 'saloon_service_id');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }

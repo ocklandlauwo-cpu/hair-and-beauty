@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
+  uses_product: z.boolean(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -23,7 +24,10 @@ function SaloonServiceModal({ mode, service, onClose }: ModalProps) {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: mode === 'edit' ? service.name : '' },
+    defaultValues: {
+      name: mode === 'edit' ? service.name : '',
+      uses_product: mode === 'edit' ? service.uses_product : false,
+    },
   })
 
   const mutation = useMutation({
@@ -61,6 +65,15 @@ function SaloonServiceModal({ mode, service, onClose }: ModalProps) {
               className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
             {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input type="checkbox" {...register('uses_product')}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600" />
+            <span>
+              Uses products
+              <span className="block text-xs text-gray-500">Show an optional product and quantity when logging this service. Stock is not reduced.</span>
+            </span>
+          </label>
 
           {serverError && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{serverError}</p>
@@ -113,6 +126,11 @@ export default function SaloonServicesPage() {
 
   const columns = [
     { key: 'name', header: 'Service Name' },
+    {
+      key: 'uses_product',
+      header: 'Uses Products',
+      render: (s: SaloonService) => s.uses_product ? <Badge variant="success">Yes</Badge> : <span className="text-xs text-gray-400">No</span>,
+    },
     {
       key: 'is_active',
       header: 'Status',

@@ -4,6 +4,7 @@ import { X, Plus } from 'lucide-react'
 import { saloonSalesApi, type SaloonSale } from '@/api/saloonSales'
 import { providersApi } from '@/api/providers'
 import { saloonServicesApi } from '@/api/saloonServices'
+import { productsApi } from '@/api/products'
 import { locationsApi } from '@/api/locations'
 import { useAuth } from '@/contexts/AuthContext'
 import DataTable from '@/components/ui/DataTable'
@@ -21,6 +22,8 @@ function LogSaleModal({ onClose, isAdmin }: { onClose: () => void; isAdmin: bool
   const [locationId, setLocationId] = useState('')
   const [providerId, setProviderId] = useState('')
   const [serviceId, setServiceId] = useState('')
+  const [productId, setProductId] = useState('')
+  const [productQty, setProductQty] = useState('')
   const [amount, setAmount] = useState('')
   const [saleDate, setSaleDate] = useState(defaultDateTo)
   const [error, setError] = useState<string | null>(null)
@@ -39,11 +42,22 @@ function LogSaleModal({ onClose, isAdmin }: { onClose: () => void; isAdmin: bool
     queryFn: () => saloonServicesApi.list().then(r => r.data.data),
   })
 
+  const selectedService = (services ?? []).find(s => String(s.id) === serviceId)
+  const showProduct = !!selectedService?.uses_product
+
+  const { data: products } = useQuery({
+    queryKey: ['products', 'saloon-picker'],
+    queryFn: () => productsApi.list({ per_page: 500 }).then(r => r.data.data),
+    enabled: showProduct,
+  })
+  const activeProducts = (products ?? []).filter(p => p.is_active).sort((a, b) => a.name.localeCompare(b.name))
+
   const mutation = useMutation({
     mutationFn: () => saloonSalesApi.create({
       ...(isAdmin && locationId ? { location_id: Number(locationId) } : {}),
       provider_id: Number(providerId),
       saloon_service_id: Number(serviceId),
+      ...(showProduct && productId ? { product_id: Number(productId), product_quantity: Number(productQty) } : {}),
       amount: Number(amount),
       sale_date: saleDate,
     }),
@@ -62,6 +76,9 @@ function LogSaleModal({ onClose, isAdmin }: { onClose: () => void; isAdmin: bool
     if (isAdmin && !locationId) { setError('Select a shop.'); return }
     if (!providerId) { setError('Select a provider.'); return }
     if (!serviceId) { setError('Select a service.'); return }
+    if (showProduct && productId && !(Number.isInteger(Number(productQty)) && Number(productQty) >= 1)) {
+      setError('Enter a product quantity of at least 1.'); return
+    }
     const parsedAmount = Number(amount)
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) { setError('Enter a valid amount greater than 0.'); return }
     setError(null)
@@ -111,6 +128,28 @@ function LogSaleModal({ onClose, isAdmin }: { onClose: () => void; isAdmin: bool
               {activeServices.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
+
+          {showProduct && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label htmlFor="ls-product" className="block text-sm font-medium text-gray-700">
+                  Product <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <select id="ls-product" value={productId} onChange={e => { setProductId(e.target.value); if (e.target.value && !productQty) setProductQty('1') }}
+                  className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600">
+                  <option value="">— No product —</option>
+                  {activeProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="ls-qty" className="block text-sm font-medium text-gray-700">Quantity</label>
+                <input id="ls-qty" type="number" min="1" step="1" value={productQty} disabled={!productId}
+                  onChange={e => setProductQty(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600 disabled:bg-gray-50" />
+              </div>
+              <p className="col-span-3 -mt-2 text-xs text-gray-400">Recorded for reference only — stock is not reduced.</p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="ls-amount" className="block text-sm font-medium text-gray-700">Amount (TZS)</label>
@@ -166,6 +205,8 @@ export default function SaloonCenterPage() {
     { key: 'sale_date', header: 'Date', render: (s: SaloonSale) => new Date(s.sale_date).toLocaleDateString() },
     { key: 'provider_name', header: 'Provider' },
     { key: 'service_name', header: 'Service' },
+    { key: 'product_name', header: 'Product', render: (s: SaloonSale) => s.product_name ?? <span className="text-gray-400">—</span> },
+    { key: 'product_quantity', header: 'Qty', render: (s: SaloonSale) => s.product_quantity ?? <span className="text-gray-400">—</span>, className: 'text-right' },
     { key: 'amount', header: 'Amount (TZS)', render: (s: SaloonSale) => fmt(s.amount), className: 'text-right' },
     { key: 'location_name', header: 'Shop' },
   ]

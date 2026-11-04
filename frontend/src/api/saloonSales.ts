@@ -6,6 +6,8 @@ export interface SaloonSale {
   sale_date: string
   provider_name: string
   service_name: string
+  product_name: string | null
+  product_quantity: number | null
   amount: string
   location_name: string
 }
@@ -13,6 +15,14 @@ export interface SaloonSale {
 export const saloonSalesApi = {
   list: (params?: { location_id?: number | ''; date_from?: string; date_to?: string; page?: number }) =>
     api.get<PaginatedResponse<SaloonSale>>('/saloon-sales', { params }),
-  create: (data: { location_id?: number; provider_id: number; saloon_service_id: number; amount: number; sale_date: string }) =>
+  create: (data: {
+    location_id?: number
+    provider_id: number
+    saloon_service_id: number
+    product_id?: number
+    product_quantity?: number
+    amount: number
+    sale_date: string
+  }) =>
     api.post<{ data: SaloonSale }>('/saloon-sales', data),
 }

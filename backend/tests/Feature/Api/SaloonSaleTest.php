@@ -90,3 +90,46 @@ it('index filters by date range and shop, and a seller only sees their own shop'
     expect($amounts)->toHaveCount(1);
     expect($amounts->first())->toBe('1000.00');
 });
+
+it('records the product and quantity for a service that uses products, without touching stock', function () {
+    $f = saloonSaleFixtures();
+    DB::statement("SELECT set_config('app.role', 'admin', false)");
+    $braidId = DB::table('saloon_services')->insertGetId(['name' => 'KUSUKA NYWELE', 'uses_product' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $catId  = DB::table('categories')->insertGetId(['name' => 'SSC'.uniqid(), 'created_at' => now(), 'updated_at' => now()]);
+    $prodName = 'Braid Pack'.uniqid();
+    $prodId = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => $prodName, 'wholesale_price' => 100, 'retail_price' => 150, 'created_at' => now(), 'updated_at' => now()]);
+    DB::unprepared('RESET app.role');
+    $movementsBefore = DB::table('stock_movements')->where('product_id', $prodId)->count();
+
+    Sanctum::actingAs($f['admin']);
+    $this->postJson('/api/v1/saloon-sales', [
+        'location_id' => $f['shopA'], 'provider_id' => $f['providerId'], 'saloon_service_id' => $braidId,
+        'product_id' => $prodId, 'product_quantity' => 3, 'amount' => 20000, 'sale_date' => today()->toDateString(),
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.product_quantity', 3)
+        ->assertJsonPath('data.product_name', $prodName);
+
+    expect(DB::table('stock_movements')->where('product_id', $prodId)->count())->toBe($movementsBefore);
+});
+
+it('product is optional and is ignored for services that do not use products', function () {
+    $f = saloonSaleFixtures();
+    DB::statement("SELECT set_config('app.role', 'admin', false)");
+    $catId  = DB::table('categories')->insertGetId(['name' => 'SSC'.uniqid(), 'created_at' => now(), 'updated_at' => now()]);
+    $prodId = DB::table('products')->insertGetId(['category_id' => $catId, 'name' => 'SSP'.uniqid(), 'wholesale_price' => 100, 'retail_price' => 150, 'created_at' => now(), 'updated_at' => now()]);
+    DB::unprepared('RESET app.role');
+    Sanctum::actingAs($f['admin']);
+
+    // Kuosha (uses_product = false): product fields are dropped
+    $this->postJson('/api/v1/saloon-sales', [
+        'location_id' => $f['shopA'], 'provider_id' => $f['providerId'], 'saloon_service_id' => $f['serviceId'],
+        'product_id' => $prodId, 'product_quantity' => 2, 'amount' => 5000, 'sale_date' => today()->toDateString(),
+    ])->assertCreated()->assertJsonPath('data.product_name', null)->assertJsonPath('data.product_quantity', null);
+
+    // Product chosen without a quantity is rejected
+    $this->postJson('/api/v1/saloon-sales', [
+        'location_id' => $f['shopA'], 'provider_id' => $f['providerId'], 'saloon_service_id' => $f['serviceId'],
+        'product_id' => $prodId, 'amount' => 6000, 'sale_date' => today()->toDateString(),
+    ])->assertUnprocessable()->assertJsonValidationErrors('product_quantity');
+});
