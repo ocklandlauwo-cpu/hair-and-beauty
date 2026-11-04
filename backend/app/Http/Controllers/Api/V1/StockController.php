@@ -80,7 +80,13 @@ class StockController extends Controller
 
     public function low(): JsonResponse
     {
-        $rows = DB::table('v_low_stock_alerts')->orderBy('days_of_cover')->get();
+        $user = auth()->user();
+
+        // Sellers only see their own shop; admin and store keeper see every location
+        $rows = DB::table('v_low_stock_alerts')
+            ->when($user->role === 'seller', fn ($q) => $q->where('location_id', $user->location_id))
+            ->orderBy('days_of_cover')
+            ->get();
 
         return response()->json(['data' => $rows]);
     }

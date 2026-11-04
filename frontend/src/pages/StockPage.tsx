@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowLeftRight, ChevronDown, ChevronRight, Clock, Package, Pencil, Search, Warehouse, X } from 'lucide-react'
 import { stockApi, MOVEMENT_META, type StockRow, type ExpiryAlert, type LowStockAlert } from '@/api/stock'
@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable'
 import Badge from '@/components/ui/Badge'
 
 type Tab = 'current' | 'inventory' | 'expiry' | 'low'
+const TABS: Tab[] = ['current', 'inventory', 'expiry', 'low']
 
 // ── Movements expansion panel (lazy-fetched per row) ──────────────────────
 function MovementsPanel({ productId, locationId }: { productId: number; locationId: number }) {
@@ -484,7 +485,14 @@ export default function StockPage() {
   const isAdmin = user?.role === 'admin'
   const canTransfer = user?.role === 'admin' || user?.role === 'store_keeper'
 
-  const [tab, setTab] = useState<Tab>('current')
+  // ?tab= lets links (e.g. the header low-stock bell) open a specific tab
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const urlTab = TABS.includes(tabParam as Tab) ? tabParam as Tab : null
+  const [tab, setTab] = useState<Tab>(urlTab ?? 'current')
+  useEffect(() => {
+    if (urlTab) setTab(urlTab)
+  }, [urlTab])
   const [productSearch, setProductSearch] = useState('')
   const [locationId, setLocationId] = useState<string>('')
 
