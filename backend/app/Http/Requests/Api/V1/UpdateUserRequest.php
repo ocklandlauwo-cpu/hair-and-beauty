@@ -18,6 +18,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', "unique:users,email,{$userId}"],
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9][0-9\s\-]{6,19}$/'],
             'password' => ['sometimes', 'string', 'min:8'],
             'role' => ['sometimes', 'in:admin,store_keeper,seller'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],

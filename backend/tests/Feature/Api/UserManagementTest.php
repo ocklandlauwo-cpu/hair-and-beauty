@@ -47,3 +47,27 @@ it('admin can update a user email', function () {
         ->assertOk()
         ->assertJsonPath('data.email', 'new@example.com');
 });
+
+it('phone is optional on create and can be added, changed and cleared on edit', function () {
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $id = $this->postJson('/api/v1/users', [
+        'name' => 'No Phone', 'email' => 'nophone.'.uniqid().'@example.com',
+        'password' => 'password123', 'role' => 'store_keeper',
+    ])->assertCreated()->assertJsonPath('data.phone', null)->json('data.id');
+
+    $this->putJson("/api/v1/users/{$id}", ['phone' => '+255 712 345 678'])
+        ->assertOk()->assertJsonPath('data.phone', '+255 712 345 678');
+
+    $this->putJson("/api/v1/users/{$id}", ['phone' => ''])
+        ->assertOk()->assertJsonPath('data.phone', null);
+});
+
+it('rejects an invalid phone number', function () {
+    Sanctum::actingAs(User::factory()->admin()->create());
+
+    $this->postJson('/api/v1/users', [
+        'name' => 'Bad Phone', 'email' => 'badphone.'.uniqid().'@example.com',
+        'password' => 'password123', 'role' => 'store_keeper', 'phone' => 'call me',
+    ])->assertUnprocessable()->assertJsonValidationErrors('phone');
+});

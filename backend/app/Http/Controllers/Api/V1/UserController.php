@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    private const FIELDS = ['id', 'name', 'email', 'role', 'location_id', 'is_active'];
+    private const FIELDS = ['id', 'name', 'email', 'phone', 'role', 'location_id', 'is_active'];
 
     public function index(): JsonResponse
     {

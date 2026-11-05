@@ -15,6 +15,10 @@ function makeSchema(mode: 'create' | 'edit') {
   return z.object({
     name:        z.string().min(2, 'Name must be at least 2 characters'),
     email:       z.email('Valid email required'),
+    phone:       z.union([
+      z.string().trim().regex(/^\+?[0-9][0-9\s-]{6,19}$/, 'Enter a valid phone number (digits, spaces, dashes, optional +)'),
+      z.literal(''),
+    ]),
     password:    mode === 'create'
       ? z.string().min(8, 'Password must be at least 8 characters')
       : z.union([z.string().min(8, 'Password must be at least 8 characters'), z.literal('')]),
@@ -56,6 +60,7 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
       ? {
           name:        user.name,
           email:       user.email,
+          phone:       user.phone ?? '',
           password:    '',
           role:        user.role,
           location_id: user.location_id,
@@ -64,6 +69,7 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
       : {
           name:        '',
           email:       '',
+          phone:       '',
           password:    '',
           role:        'seller',
           location_id: null,
@@ -80,6 +86,7 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
         return usersApi.create({
           name:        values.name,
           email:       values.email,
+          phone:       values.phone || null,
           password:    values.password as string,
           role:        values.role,
           location_id: values.location_id ?? undefined,
@@ -88,6 +95,7 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
       const payload: Parameters<typeof usersApi.update>[1] = {
         name:        values.name,
         email:       values.email,
+        phone:       values.phone || null,
         role:        values.role,
         location_id: values.location_id ?? null,
         is_active:   values.is_active,
@@ -144,6 +152,16 @@ function UserFormModal({ mode, user, onClose }: ModalProps) {
             <input id="u-email" type="email" {...register('email')}
               className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
             {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          </div>
+
+          {/* Phone (optional) */}
+          <div>
+            <label htmlFor="u-phone" className="block text-sm font-medium text-gray-700">
+              Phone <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input id="u-phone" type="tel" placeholder="+255 712 345 678" {...register('phone')}
+              className="mt-1 block w-full rounded-md border border-gray-300 h-10 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-600" />
+            {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
           </div>
 
           {/* Password */}
@@ -360,6 +378,11 @@ function LocationCoordinatesModal({ location, onClose }: { location: Location; o
 const BASE_COLUMNS = [
   { key: 'name',  header: 'Name' },
   { key: 'email', header: 'Email' },
+  {
+    key: 'phone',
+    header: 'Phone',
+    render: (u: User) => u.phone ?? <span className="text-gray-400">—</span>,
+  },
   {
     key: 'role',
     header: 'Role',

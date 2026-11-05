@@ -16,6 +16,7 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9][0-9\s\-]{6,19}$/'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', 'in:admin,store_keeper,seller'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],
