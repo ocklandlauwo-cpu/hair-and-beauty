@@ -8,16 +8,18 @@ export interface BankDepositInfo {
   verified_by_name: string | null
 }
 
-export type DepositChannel = 'cash' | 'nmb' | 'mobile'
+export type DepositChannel = 'cash' | 'nmb' | 'mobile' | 'saloon'
 
 export interface DailySalesRow {
   sale_date: string
   location_id: number
   location_name: string
   sales_count: number
+  saloon_count: number
   cash: string
   nmb: string
   mobile: string
+  saloon: string
   total: string
   deposits: Record<DepositChannel, BankDepositInfo | null>
 }

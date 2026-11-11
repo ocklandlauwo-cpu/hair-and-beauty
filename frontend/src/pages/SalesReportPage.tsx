@@ -13,6 +13,7 @@ const CHANNELS: Array<{ key: DepositChannel; label: string }> = [
   { key: 'cash',   label: 'Cash' },
   { key: 'nmb',    label: 'NMB' },
   { key: 'mobile', label: 'Mobile Money' },
+  { key: 'saloon', label: 'Saloon Center' },
 ]
 const channelLabel = (key: DepositChannel) => CHANNELS.find(c => c.key === key)!.label
 
@@ -52,9 +53,10 @@ export default function SalesReportPage() {
     cash: acc.cash + Number(r.cash),
     nmb: acc.nmb + Number(r.nmb),
     mobile: acc.mobile + Number(r.mobile),
+    saloon: acc.saloon + Number(r.saloon),
     total: acc.total + Number(r.total),
     verified: acc.verified + CHANNELS.reduce((s, c) => s + Number(r.deposits[c.key]?.amount ?? 0), 0),
-  }), { cash: 0, nmb: 0, mobile: 0, total: 0, verified: 0 }), [rows])
+  }), { cash: 0, nmb: 0, mobile: 0, saloon: 0, total: 0, verified: 0 }), [rows])
 
   const onBankChanged = () => {
     qc.invalidateQueries({ queryKey: ['sales-report'] })
@@ -131,7 +133,10 @@ export default function SalesReportPage() {
                 <tr key={`${r.sale_date}-${r.location_id}`} className="align-top hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{r.sale_date}</td>
                   <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{r.location_name}</td>
-                  <td className="px-4 py-3 text-right text-gray-600">{r.sales_count}</td>
+                  <td className="px-4 py-3 text-right text-gray-600">
+                    {r.sales_count}
+                    {r.saloon_count > 0 && <p className="text-xs text-gray-400">+{r.saloon_count} saloon</p>}
+                  </td>
                   {CHANNELS.map(c => {
                     const amount = Number(r[c.key])
                     const deposit = r.deposits[c.key]
@@ -172,9 +177,9 @@ export default function SalesReportPage() {
             <tfoot className="bg-gray-50 text-sm font-semibold text-gray-900">
               <tr>
                 <td className="px-4 py-3" colSpan={3}>Total</td>
-                <td className="px-4 py-3 text-right whitespace-nowrap">{fmtTzs(totals.cash)}</td>
-                <td className="px-4 py-3 text-right whitespace-nowrap">{fmtTzs(totals.nmb)}</td>
-                <td className="px-4 py-3 text-right whitespace-nowrap">{fmtTzs(totals.mobile)}</td>
+                {CHANNELS.map(c => (
+                  <td key={c.key} className="px-4 py-3 text-right whitespace-nowrap">{fmtTzs(totals[c.key])}</td>
+                ))}
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   {fmtTzs(totals.total)}
                   <p className="text-xs font-medium text-gray-500">Verified {fmtTzs(totals.verified)}</p>

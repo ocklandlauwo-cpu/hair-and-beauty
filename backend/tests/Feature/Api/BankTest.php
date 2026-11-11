@@ -36,7 +36,8 @@ it('sales report splits a shop day by payment method and excludes reverted sales
         ->assertJsonPath('data.0.nmb', '7000.00')
         ->assertJsonPath('data.0.mobile', '3000.00')
         ->assertJsonPath('data.0.total', '25000.00')
-        ->assertJsonPath('data.0.deposits', ['cash' => null, 'nmb' => null, 'mobile' => null]);
+        ->assertJsonPath('data.0.saloon', '0.00')
+        ->assertJsonPath('data.0.deposits', ['cash' => null, 'nmb' => null, 'mobile' => null, 'saloon' => null]);
 });
 
 it('verifying a deposit snapshots the cash total, shows on the report, and counts as money in', function () {
@@ -117,4 +118,69 @@ it('cash, NMB and mobile money are verified separately and all add up in money i
         ->assertJsonPath('data.0.deposits.mobile.amount', '3000.00');
 
     expect((float) $this->getJson('/api/v1/bank/summary')->json('data.money_in'))->toBe($before + 25000);
+});
+
+function addSaloonSale(int $shopId, int $userId, string $day, float $amount): void
+{
+    DB::statement("SELECT set_config('app.role', 'admin', false)");
+    $providerId = DB::table('providers')->insertGetId(['name' => 'BProv'.uniqid(), 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    $serviceId = DB::table('saloon_services')->insertGetId(['name' => 'BServ'.uniqid(), 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('saloon_sales')->insert([
+        'location_id' => $shopId, 'provider_id' => $providerId, 'saloon_service_id' => $serviceId,
+        'amount' => $amount, 'sale_date' => $day, 'created_by' => $userId, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    DB::unprepared('RESET app.role');
+}
+
+it('sales report includes saloon sales in their own column and in the total', function () {
+    $f = bankFixtures();
+    addSaloonSale($f['shopId'], $f['seller']->id, $f['day'], 4000);
+    addSaloonSale($f['shopId'], $f['seller']->id, $f['day'], 6000);
+    Sanctum::actingAs($f['admin']);
+
+    $this->getJson("/api/v1/reports/sales?from={$f['day']}&to={$f['day']}&location_id={$f['shopId']}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.saloon', '10000.00')
+        ->assertJsonPath('data.0.saloon_count', 2)
+        ->assertJsonPath('data.0.total', '35000.00');
+});
+
+it('shows a row for a day with only saloon sales', function () {
+    $f = bankFixtures();
+    $otherDay = today()->subDays(2)->toDateString();
+    addSaloonSale($f['shopId'], $f['seller']->id, $otherDay, 8000);
+    Sanctum::actingAs($f['admin']);
+
+    $this->getJson("/api/v1/reports/sales?from={$otherDay}&to={$otherDay}&location_id={$f['shopId']}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.sales_count', 0)
+        ->assertJsonPath('data.0.cash', '0.00')
+        ->assertJsonPath('data.0.saloon', '8000.00')
+        ->assertJsonPath('data.0.total', '8000.00');
+});
+
+it('verifying saloon sales snapshots the saloon total and counts as money in', function () {
+    $f = bankFixtures();
+    addSaloonSale($f['shopId'], $f['seller']->id, $f['day'], 4500);
+    Sanctum::actingAs($f['admin']);
+    $before = (float) $this->getJson('/api/v1/bank/summary')->json('data.money_in');
+
+    $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'saloon'])
+        ->assertCreated()->assertJsonPath('data.amount', '4500.00');
+
+    $this->getJson("/api/v1/reports/sales?from={$f['day']}&to={$f['day']}&location_id={$f['shopId']}")
+        ->assertJsonPath('data.0.deposits.saloon.amount', '4500.00')
+        ->assertJsonPath('data.0.deposits.cash', null);
+
+    expect((float) $this->getJson('/api/v1/bank/summary')->json('data.money_in'))->toBe($before + 4500);
+});
+
+it('rejects verifying saloon when the shop had no saloon sales that day', function () {
+    $f = bankFixtures();
+    Sanctum::actingAs($f['admin']);
+
+    $this->postJson('/api/v1/bank-deposits', ['location_id' => $f['shopId'], 'deposit_date' => $f['day'], 'channel' => 'saloon'])
+        ->assertStatus(422);
 });

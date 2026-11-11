@@ -25,24 +25,48 @@ class BankController extends Controller
 
         $locationId = $validated['location_id'] ?? null;
 
+        // Product sales and Saloon Center sales per shop-day; a day with only saloon sales still gets a row
         $rows = DB::select("
+            WITH product_sales AS (
+                SELECT
+                    s.sale_date::date AS sale_date,
+                    s.location_id,
+                    COUNT(*) AS sales_count,
+                    SUM(CASE WHEN s.payment_method = 'cash' THEN s.total_amount ELSE 0 END) AS cash,
+                    SUM(CASE WHEN s.payment_method = 'nmb' THEN s.total_amount ELSE 0 END) AS nmb,
+                    SUM(CASE WHEN s.payment_method IN ('airtel', 'vodacom', 'tigo') THEN s.total_amount ELSE 0 END) AS mobile
+                FROM sales s
+                WHERE s.is_reverted = false
+                  AND s.sale_date::date BETWEEN ? AND ?
+                  AND (?::bigint IS NULL OR s.location_id = ?::bigint)
+                GROUP BY s.sale_date::date, s.location_id
+            ),
+            saloon AS (
+                SELECT ss.sale_date, ss.location_id, COUNT(*) AS saloon_count, SUM(ss.amount) AS saloon
+                FROM saloon_sales ss
+                WHERE ss.sale_date BETWEEN ? AND ?
+                  AND (?::bigint IS NULL OR ss.location_id = ?::bigint)
+                GROUP BY ss.sale_date, ss.location_id
+            )
             SELECT
-                s.sale_date::date AS sale_date,
+                COALESCE(p.sale_date, sl.sale_date) AS sale_date,
                 l.id AS location_id,
                 l.name AS location_name,
-                COUNT(*) AS sales_count,
-                SUM(CASE WHEN s.payment_method = 'cash' THEN s.total_amount ELSE 0 END) AS cash,
-                SUM(CASE WHEN s.payment_method = 'nmb' THEN s.total_amount ELSE 0 END) AS nmb,
-                SUM(CASE WHEN s.payment_method IN ('airtel', 'vodacom', 'tigo') THEN s.total_amount ELSE 0 END) AS mobile,
-                SUM(s.total_amount) AS total
-            FROM sales s
-            JOIN locations l ON l.id = s.location_id
-            WHERE s.is_reverted = false
-              AND s.sale_date::date BETWEEN ? AND ?
-              AND (?::bigint IS NULL OR s.location_id = ?::bigint)
-            GROUP BY s.sale_date::date, l.id, l.name
-            ORDER BY s.sale_date::date DESC, l.name
-        ", [$validated['from'], $validated['to'], $locationId, $locationId]);
+                COALESCE(p.sales_count, 0) AS sales_count,
+                COALESCE(sl.saloon_count, 0) AS saloon_count,
+                COALESCE(p.cash, 0) AS cash,
+                COALESCE(p.nmb, 0) AS nmb,
+                COALESCE(p.mobile, 0) AS mobile,
+                COALESCE(sl.saloon, 0) AS saloon,
+                COALESCE(p.cash, 0) + COALESCE(p.nmb, 0) + COALESCE(p.mobile, 0) + COALESCE(sl.saloon, 0) AS total
+            FROM product_sales p
+            FULL OUTER JOIN saloon sl ON sl.sale_date = p.sale_date AND sl.location_id = p.location_id
+            JOIN locations l ON l.id = COALESCE(p.location_id, sl.location_id)
+            ORDER BY 1 DESC, l.name
+        ", [
+            $validated['from'], $validated['to'], $locationId, $locationId,
+            $validated['from'], $validated['to'], $locationId, $locationId,
+        ]);
 
         $deposits = BankDeposit::with('verifier:id,name')
             ->whereBetween('deposit_date', [$validated['from'], $validated['to']])
@@ -69,14 +93,17 @@ class BankController extends Controller
             'location_id'   => (int) $r->location_id,
             'location_name' => $r->location_name,
             'sales_count'   => (int) $r->sales_count,
+            'saloon_count'  => (int) $r->saloon_count,
             'cash'          => $fmt($r->cash),
             'nmb'           => $fmt($r->nmb),
             'mobile'        => $fmt($r->mobile),
+            'saloon'        => $fmt($r->saloon),
             'total'         => $fmt($r->total),
             'deposits'      => [
                 'cash'   => $depositFor($r, 'cash'),
                 'nmb'    => $depositFor($r, 'nmb'),
                 'mobile' => $depositFor($r, 'mobile'),
+                'saloon' => $depositFor($r, 'saloon'),
             ],
         ])->values()]);
     }
@@ -94,12 +121,17 @@ class BankController extends Controller
             return response()->json(['message' => 'This deposit has already been verified.'], 422);
         }
 
-        $amount = (float) DB::table('sales')
-            ->where('location_id', $validated['location_id'])
-            ->whereDate('sale_date', $validated['deposit_date'])
-            ->whereIn('payment_method', BankDeposit::CHANNEL_METHODS[$validated['channel']])
-            ->where('is_reverted', false)
-            ->sum('total_amount');
+        $amount = $validated['channel'] === 'saloon'
+            ? (float) DB::table('saloon_sales')
+                ->where('location_id', $validated['location_id'])
+                ->whereDate('sale_date', $validated['deposit_date'])
+                ->sum('amount')
+            : (float) DB::table('sales')
+                ->where('location_id', $validated['location_id'])
+                ->whereDate('sale_date', $validated['deposit_date'])
+                ->whereIn('payment_method', BankDeposit::CHANNEL_METHODS[$validated['channel']])
+                ->where('is_reverted', false)
+                ->sum('total_amount');
         if ($amount <= 0) {
             return response()->json(['message' => 'There are no sales to verify for this payment method on this day.'], 422);
         }
