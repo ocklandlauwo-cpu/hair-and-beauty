@@ -18,7 +18,7 @@ class StoreDistributionRequest extends FormRequest
             'from_location_id' => [
                 'nullable', 'integer', 'different:to_location_id',
                 Rule::exists('locations', 'id')->where(
-                    fn ($q) => $q->where('type', 'shop')->where('is_active', true)
+                    fn ($q) => $q->whereIn('type', ['shop', 'store'])->where('is_active', true)
                 ),
             ],
             'to_location_id' => ['required', 'integer', 'exists:locations,id', 'different:from_location_id'],

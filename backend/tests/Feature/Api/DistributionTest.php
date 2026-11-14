@@ -189,3 +189,33 @@ it('index filters by status when requested', function () {
     $statuses = collect($this->getJson('/api/v1/distributions?status=pending')->assertOk()->json('data'))->pluck('status')->unique()->values()->all();
     expect($statuses)->toBe(['pending']);
 });
+
+it('moving stock from the store to a shop via the Move button records the store as the source', function () {
+    $f = distFixtures();
+    Sanctum::actingAs($f['sk']);
+
+    $response = $this->postJson('/api/v1/distributions', [
+        'from_location_id' => $f['storeId'],
+        'to_location_id'   => $f['shopId'],
+        'distributed_at'   => now()->toIso8601String(),
+        'items' => [['product_id' => $f['prodId'], 'quantity_sent' => 7]],
+    ]);
+
+    $response->assertCreated()->assertJsonPath('data.status', 'pending');
+    expect($response->json('data.from_location_id'))->toBe($f['storeId']);
+    expect((int) DB::table('stock_movements')
+        ->where('product_id', $f['prodId'])->where('location_id', $f['storeId'])
+        ->where('movement_type', 'distribution_out')->value('quantity'))->toBe(-7);
+});
+
+it('moving stock from the store rejects more than the store holds', function () {
+    $f = distFixtures();
+    Sanctum::actingAs($f['sk']);
+
+    $this->postJson('/api/v1/distributions', [
+        'from_location_id' => $f['storeId'],
+        'to_location_id'   => $f['shopId'],
+        'distributed_at'   => now()->toIso8601String(),
+        'items' => [['product_id' => $f['prodId'], 'quantity_sent' => 51]],
+    ])->assertStatus(422);
+});
